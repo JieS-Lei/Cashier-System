@@ -1,14 +1,24 @@
 import { ElMessage as message } from 'element-plus'
+import { useUserStore } from '~/store/modules/userStore.js'
 
-// header change
-export const handleChangeRequestHeader = config => {
-    // config["xxxx"] = "xxx"
+const userStore = useUserStore()
+
+const base_url = {
+    'production': 'http://vip.jingtoo.cn/index.php?s=/api/', // 生产环境地址
+    'development': '/proxy' // 开发环境地址
+}
+
+// config change
+export const handleChangeRequestConfig = config => {
+    config.baseURL = base_url[import.meta.env.MODE]
+    config.headers['Content-Type'] = 'multipart/form-data'
+    config.data['wxapp_id'] = '10001'
     return config
 };
 
 // token 处理
 export const handleConfigureAuth = config => {
-    config.headers["token"] = localStorage.getItem("token") || ""
+    config.headers["token"] = userStore.token || ""
     return config
 };
 
@@ -29,7 +39,7 @@ export const handleNetworkError = errStatus => {
         "505": "http版本不支持该请求",
     }
     if (errStatus) {
-        message.error(networkErrMap[errStatus] ?? `其他连接错误 --${errStatus}`)
+        message.error({ message: networkErrMap[errStatus] ?? `其他连接错误 --${errStatus}`, grouping: true })
         return
     }
 
@@ -39,18 +49,15 @@ export const handleNetworkError = errStatus => {
 // token error 处理
 export const handleAuthError = errCode => {
     const authErrMap = {
-        "10031": "登录失效，需要重新登录", // token 失效
+        "-1": "登录失效，需要重新登录", // token 失效
         "10032": "您太久没登录，请重新登录~", // token 过期
         "10033": "账户未绑定角色，请联系管理员绑定角色",
         "10034": "该用户未注册，请联系管理员注册用户",
-        "10035": "code 无法获取对应第三方平台用户",
-        "10036": "该账户未关联员工，请联系管理员做关联",
         "10037": "账号已无效",
         "10038": "账号未找到",
     }
-
     if (authErrMap.hasOwnProperty(errCode)) {
-        message.error(authErrMap[errCode])
+        message.error({ message: authErrMap[errCode], grouping: true })
         // 授权错误，登出账户
         // logout();
         return false
@@ -61,7 +68,7 @@ export const handleAuthError = errCode => {
 
 // 其余错误处理
 export const handleGeneralError = (errCode, errMsg) => {
-    if (errCode !== "0") {
+    if (errCode !== 1) {
         message.error(errMsg)
         return false
     }

@@ -1,5 +1,5 @@
-import { Get } from "../server";
+import { Get, Post } from "../server";
 
-export const userApi = {
-    getUserInfo: id => Get("/user/info", { id }),
+export const loginApi = {
+    login: data => Post("cashier/login", data),
 };

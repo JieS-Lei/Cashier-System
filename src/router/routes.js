@@ -1,6 +1,6 @@
-const home = () => import('@/pages/home/index.vue');
-const login = () => import('@/pages/login/index.vue');
-const Page404 = () => import('@/components/404.vue');
+const home = () => import('~/pages/home/index.vue');
+const login = () => import('~/pages/login/index.vue');
+const Page404 = () => import('~/components/404.vue');
 
 const routes = [
     {
@@ -10,6 +10,9 @@ const routes = [
         path: '/home',
         name: 'home',
         component: home,
+        meta: {
+            admin: true
+        }
     }, {
         path: '/login',
         name: 'login',

@@ -1,10 +1,10 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import ElementPlus from 'element-plus'
-import pinia from '@/stores'
-import router from '@/router'
+import pinia from '~/store'
+import router from '~/router'
 
-import '@/assets/style/index.css'
+import '~/assets/style/index.css'
 import 'element-plus/dist/index.css'
 import locale from 'element-plus/lib/locale/lang/zh-cn'
 

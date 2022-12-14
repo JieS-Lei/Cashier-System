@@ -1,4 +1,8 @@
 <script setup>
+import { useUserStore } from '~/store/modules/userStore.js'
+const userStore = useUserStore()
+let tokenFromLoc = localStorage.getItem('token')
+if (!userStore.token && tokenFromLoc) userStore.setToken(tokenFromLoc)
 
 </script>
 

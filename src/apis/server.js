@@ -1,25 +1,26 @@
 import axios from "axios"
 
 import {
-    handleChangeRequestHeader,
+    handleChangeRequestConfig,
     handleConfigureAuth,
     handleAuthError,
     handleGeneralError,
     handleNetworkError
 } from "./tools"
 
+const instance = axios.create();
 
-axios.interceptors.request.use(config => {
-    config = handleChangeRequestHeader(config)
+instance.interceptors.request.use(config => {
+    config = handleChangeRequestConfig(config)
     config = handleConfigureAuth(config)
     return config
 })
 
-axios.interceptors.response.use(
+instance.interceptors.response.use(
     response => {
         if (response.status !== 200) return Promise.reject(response.data)
-        handleAuthError(response.data.errno)
-        handleGeneralError(response.data.errno, response.data.errmsg)
+        let authPass = handleAuthError(response.data.code)
+        authPass && handleGeneralError(response.data.code, response.data.msg)
         return response
     },
     err => {
@@ -30,7 +31,7 @@ axios.interceptors.response.use(
 
 export const Get = (url, params = {}, clearFn) =>
     new Promise(resolve => {
-        axios
+        instance
             .get(url, { params })
             .then(result => {
                 let res
@@ -48,7 +49,7 @@ export const Get = (url, params = {}, clearFn) =>
 
 export const Post = (url, data, params = {}) => {
     return new Promise(resolve => {
-        axios
+        instance
             .post(url, data, { params })
             .then((result) => {
                 resolve([null, result.data])

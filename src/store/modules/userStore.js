@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia'
 
+
 export const useUserStore = defineStore('user', {
+    persist: {
+        key: 'USER',
+        storage: sessionStorage
+    }, // 持久化
     state: () => {
         return {
             isLogin: false,
@@ -9,13 +14,10 @@ export const useUserStore = defineStore('user', {
         }
     },
     actions: {
-        login() {
-
+        setToken(token) {
+            // action 中修改状态
+            this.token = token
+            this.isLogin = true
         }
     }
-}, {
-    persist: {
-        key: 'user',
-        storage: sessionStorage
-    } // 持久化
 })

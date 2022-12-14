@@ -1,3 +1,7 @@
+:root{
+    --win-min-width: 1020px;
+}
+
 body,
 h1,
 h2,

@@ -18,10 +18,17 @@ export default defineConfig({
   ],
   resolve: {
     alias: [//配置别名
-      { find: '@', replacement: resolve(__dirname, 'src') }
+      { find: '~', replacement: resolve(__dirname, 'src') }
     ]
   },
   server: {
-    host: '0.0.0.0'
+    host: '0.0.0.0',
+    proxy: {
+      '^/proxy': {
+        target: 'https://vip.jingtoo.cn/index.php?s=/api',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/proxy/, ''),
+      }
+    }
   }
 })
