@@ -14,13 +14,13 @@ export const handleChangeRequestConfig = config => {
     config.headers['Content-Type'] = 'multipart/form-data'
     config.data['wxapp_id'] = '10001'
     return config
-};
+}
 
 // token 处理
 export const handleConfigureAuth = config => {
     config.headers["token"] = userStore.token || ""
     return config
-};
+}
 
 // network error 处理
 export const handleNetworkError = errStatus => {
@@ -44,7 +44,7 @@ export const handleNetworkError = errStatus => {
     }
 
     message.error("无法连接到服务器！")
-};
+}
 
 // token error 处理
 export const handleAuthError = errCode => {
@@ -64,7 +64,7 @@ export const handleAuthError = errCode => {
     }
 
     return true
-};
+}
 
 // 其余错误处理
 export const handleGeneralError = (errCode, errMsg) => {

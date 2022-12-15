@@ -13,7 +13,11 @@ router.beforeEach((to, from, next) => {
         // 权限路由
         if (userStore.isLogin) next()
         else next('/login')
-    } else next()
+    } else if (to.name === 'login' && userStore.isLogin) {
+        // 已存在token
+        next('/home')
+    }
+    else next()
 })
 
 export default router
