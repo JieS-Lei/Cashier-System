@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.0.10",
     "axios": "^1.2.1",
     "element-plus": "^2.2.26",
     "pinia": "^2.0.28",
@@ -17,8 +18,10 @@
     "vue-router": "4"
   },
   "devDependencies": {
+    "@iconify-json/ep": "^1.1.8",
     "@vitejs/plugin-vue": "^3.2.0",
     "unplugin-auto-import": "^0.12.0",
+    "unplugin-icons": "^0.14.15",
     "unplugin-vue-components": "^0.22.11",
     "vite": "^3.2.5"
   },
