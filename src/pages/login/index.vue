@@ -1,6 +1,4 @@
 <script setup>
-import { ref, reactive } from 'vue';
-import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '~/store/modules/userStore.js'
 import { api } from '~/apis'

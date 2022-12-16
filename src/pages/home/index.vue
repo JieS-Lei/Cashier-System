@@ -1,27 +1,43 @@
 <script setup>
 import iconImage from '~/components/iconImage.vue'
+import dataView from '~/components/dataView.vue'
+
 const buttons = [
-    { text: '商品', icon: '/ArrowLeft.png', link: 'sp' },
-    { text: '会员', icon: '/ArrowLeft.png', link: 'vip' },
+    { text: '商品', icon: '/ArrowLeft.png', link: '/goods' },
+    { text: '会员', icon: '/ArrowLeft.png', link: '/vip' },
 ]
 const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+
+let dropdownShow = ref(false)
+
+const command = function (command) {
+    ElMessage(`click on item ${command}`)
+}
+const todo = function (event) {
+    let target = event.target
+    console.log(event);
+}
+
 
 </script>
 
 <template>
-    <el-container direction="horizontal">
+    <el-container direction="horizontal" style="font-family: var(--el-font-family);user-select: none;">
         <el-aside class="aside">
             <div class="logo">
                 <icon-image src="/logo.jpg" widHei="100%" bg />
             </div>
             <el-scrollbar class="menu">
-                <div class="menu-btn-parent">
-                    <el-button class="menu-btn" v-for="button in buttons" :key="button.text" :type="button.type" text bg
-                        size="default">
-                        <icon-image class="menu-btn-icon" :src="button.icon" />
-                        {{ button.text }}
-                    </el-button>
-                </div>
+                <!-- <div class="menu-btn-parent" @click="todo"> -->
+                <el-button-group class="menu-btn-parent" @click="todo">
+                    <router-link class="menu-btn" :to="button.link" v-for="button in buttons" :key="button.text">
+                        <el-button :type="button.type" size="default" text bg style="width: 100%;height: 100%;">
+                            <icon-image class="menu-btn-icon" :src="button.icon" />
+                            {{ button.text }}
+                        </el-button>
+                    </router-link>
+                </el-button-group>
+                <!-- </div> -->
                 <div class="cashier">
                     <el-button class="cashier-btn" color="#b4995a">
                         <icon-image widHei="50" src="/logos.jpg" style="margin-bottom: 10px;" />
@@ -35,9 +51,9 @@ const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1ep
                 <el-header class="header">
                     <div class="setting">
                         <el-icon size="20">
-                            <ep-setting />
+                            <ep-service />
                         </el-icon>
-                        <span>设置</span>
+                        <span>联系客服</span>
                     </div>
                     <div class="setting">
                         <el-icon size="20">
@@ -49,18 +65,26 @@ const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1ep
                         <el-avatar :size="30" :src="circleUrl" fit="cover">
                             <ep-user-filled />
                         </el-avatar>
-                        <span>随客</span>
+                        <el-dropdown size="large" @command="command" @visible-change="close => dropdownShow = close">
+                            <span>
+                                随客
+                                <el-icon>
+                                    <ep-arrow-down v-show="!dropdownShow" />
+                                    <ep-arrow-up v-show="dropdownShow" />
+                                </el-icon>
+                            </span>
+                            <template #dropdown>
+                                <el-dropdown-menu>
+                                    <el-dropdown-item command="about">关于我们</el-dropdown-item>
+                                    <el-dropdown-item disabled>Action 4</el-dropdown-item>
+                                    <el-dropdown-item divided>Action 5</el-dropdown-item>
+                                </el-dropdown-menu>
+                            </template>
+                        </el-dropdown>
                     </div>
                 </el-header>
                 <el-main class="main">
-                    <el-row :gutter="20">
-                        <el-col :span="6">
-
-                        </el-col>
-                        <el-col :span="6">
-
-                        </el-col>
-                    </el-row>
+                    <dataView />
                 </el-main>
             </el-container>
         </el-scrollbar>
@@ -76,8 +100,16 @@ const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1ep
     width: var(--aside-width);
     height: 100vh;
     font-size: 0;
+    transition: width .2s;
+    /* background-color: #243642; */
     /* overflow: hidden; */
     /* background-color: ; */
+}
+
+@media screen and (max-width: 1200px) {
+    .aside {
+        --aside-width: 300px;
+    }
 }
 
 .logo {
@@ -101,6 +133,11 @@ const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1ep
     box-sizing: border-box;
 }
 
+.menu-btn-parent::before,
+.menu-btn-parent::after {
+    display: none;
+}
+
 .menu-btn {
     width: calc(100% * 0.47);
     height: 65px;
@@ -108,6 +145,7 @@ const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1ep
     font-weight: bolder;
     margin-left: 0;
     margin-top: 15px;
+    transition: width .2s;
 }
 
 .menu-btn-icon {
@@ -115,7 +153,7 @@ const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1ep
 }
 
 .cashier {
-    padding: 30px 30px 20px;
+    padding: 40px 30px 20px;
 }
 
 .cashier-btn {
@@ -143,14 +181,13 @@ const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1ep
     justify-content: right;
     align-items: center;
     padding: 10px 60px;
-    font-family: var(--el-font-family);
     line-height: 1;
 }
 
 .header>div {
     display: inline-flex;
     align-items: center;
-    user-select: none;
+    font-size: var(--el-font-size-large);
 }
 
 .header>div+div {
@@ -162,8 +199,11 @@ const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1ep
 }
 
 .header>div span {
+    display: inline-flex;
     margin-left: 8px;
 }
 
-/* .main {} */
+.main {
+    padding: 30px 50px;
+}
 </style>

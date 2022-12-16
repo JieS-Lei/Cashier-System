@@ -1,7 +1,3 @@
-const home = () => import('~/pages/home/index.vue');
-const login = () => import('~/pages/login/index.vue');
-const Page404 = () => import('~/components/404.vue');
-
 const routes = [
     {
         path: '/',
@@ -9,21 +5,29 @@ const routes = [
     }, {
         path: '/home',
         name: 'home',
-        component: home,
+        component: () => import('~/pages/home/index.vue'),
+        meta: {
+            admin: true
+        }
+    }, {
+        path: '/goods',
+        name: 'goods',
+        component: () => import('~/pages/goods/index.vue'),
         meta: {
             admin: true
         }
     }, {
         path: '/login',
         name: 'login',
-        component: login,
+        component: () => import('~/pages/login/index.vue'),
     }, {
         path: "/404",
         name: '404',
-        component: Page404,
+        component: () => import('~/components/404.vue'),
     }, {
         path: '/:catchAll(.*)',
         redirect: "/404"
     },
-];
+]
+
 export default routes
