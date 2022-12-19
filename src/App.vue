@@ -10,6 +10,8 @@ if (!userStore.token && tokenFromLoc) userStore.setToken(tokenFromLoc)
   <router-view />
 </template>
 
-<style scoped>
-
+<style>
+#app {
+  font-family: var(--el-font-family);
+}
 </style>

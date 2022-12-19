@@ -1,7 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useUserStore } from '~/store/modules/userStore.js'
-import { api } from '~/apis'
+import { apis } from '~/apis'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -44,7 +44,7 @@ const onLogin = function (formEl) {
         localStorage.removeItem('DATA_NAME')
         localStorage.removeItem('token')
       }
-      const [error, result] = await api.login({
+      const [error, result] = await apis.login({
         user_name: loginForm.uname,
         password: loginForm.pwd
       })

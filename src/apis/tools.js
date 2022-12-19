@@ -12,6 +12,7 @@ const base_url = {
 export const handleChangeRequestConfig = config => {
     config.baseURL = base_url[import.meta.env.MODE]
     config.headers['Content-Type'] = 'multipart/form-data'
+    config.data = config.data || {}
     config.data['wxapp_id'] = '10001'
     return config
 }
