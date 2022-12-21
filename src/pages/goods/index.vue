@@ -6,7 +6,6 @@ import { debounce } from '~/utils'
 
 const router = useRouter()
 
-const search = ref('')
 const back = () => router.replace('/home')
 const escDown = event => event.key === 'Escape' && back()
 
@@ -15,6 +14,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
     document.documentElement.removeEventListener('keyup', escDown)
+    window.onresize = null
 })
 
 const checked1 = ref(false)
@@ -81,14 +81,35 @@ const shortcuts = [
     },
 ]
 const change = changeDate => {
-    console.log(date.value, changeDate);
+    let startTime = changeDate[0].getTime(),
+        endTime = changeDate[1].getTime()
+    getGoodsList({
+        startTime,
+        endTime
+    })
 }
 
-const deleteType = ref('') //
-const deleteChange = type => {
+// 删除商品
+const deleteType = ref('')
+const deleteChange = async type => {
     deleteType.value = ''
     if ('deleteChecked' === type) {
-
+        // 删除选中
+        if (!multipleSelection.value.length) return ElMessage.warning({ message: '您未选择任何商品', showClose: true, grouping: true })
+        let goodIds = multipleSelection.value.map(item => item.goods_id)
+        loading = true
+        let [error, { data, code }] = await apis.deleteGoods({
+            goodsId: goodIds
+        })
+        if (error || 1 !== code) {
+            ElMessage.error('删除失败')
+            return loading = false
+        }
+        console.log(data)
+        getGoodsList()
+        ElMessage.success('修改成功')
+    } else if ('typeDelete' === type) {
+        // 按类型删除
     }
 }
 
@@ -98,6 +119,8 @@ const sortChange = value => {
 }
 
 // 表格
+let typeId = '' // 选中的id
+const search = ref('') // 搜索内容
 const multipleTableRef = ref() // 表格实例
 const multipleSelection = ref([]) // 表格选中数据
 const tableData = ref([]) // 表格数据
@@ -108,24 +131,28 @@ const page = reactive({ // 分页参数
 })
 const loading = ref(false)
 
+// 单页数量改变 重新获取数据
 watch(currentPage, () => getGoodsList())
 
 // 获取表格数据方法
-const getGoodsList = async () => {
+const getGoodsList = async params => {
     loading.value = true
-    let [error, { data, code }] = await apis.getGoods({
+    let options = {
         page: currentPage.value,
-        listRows: page.pageSize
-    })
-    if (error || 1 !== code) return
-    console.log(data);
-    data.list.data[0].goods_sku.goods_no = 1231321
-    page.total = +data.list.total
-    tableData.value = data.list.data
+        listRows: page.pageSize,
+        search: search.value,
+        category_id: typeId,
+        ...params
+    }
+    // console.log(options);
+    let [error, { data: { list }, code }] = await apis.getGoods(options)
+    if (error || 1 !== code) return loading.value = false
+    page.total = +list.total
+    tableData.value = list.data
     loading.value = false
 }
 
-let _clientHeight = 0 // 初始高度
+let _clientHeight = 0, remainder = 0 // 初始高度 | 空余高度
 const revisePageSize = async el => {
     let elHeader, elBody
     if (!_clientHeight) {
@@ -138,8 +165,13 @@ const revisePageSize = async el => {
         elBody = el.querySelector('.el-table__body-wrapper')
     }
     let oneHei = elHeader.offsetHeight, boxHei = elBody.offsetHeight
-    let showNum = Math.floor(boxHei / oneHei), remainder = boxHei % oneHei
-    if (!_clientHeight && remainder < 32) showNum--
+    let showNum = Math.floor(boxHei / oneHei)
+    remainder = boxHei % oneHei
+    if (!_clientHeight && remainder < 32) {
+        showNum--
+        remainder += oneHei // 补充剩余高度
+    }
+    if (!_clientHeight) remainder = Math.max(remainder - 32, 0)  // 剩余高度需要留出分页控件空间
     if ('number' === typeof showNum) page.pageSize = showNum
 }
 
@@ -148,8 +180,9 @@ onMounted(async () => {
     if (el) await revisePageSize(el)
     _clientHeight = document.body.clientHeight
     window.onresize = debounce(function () {
+        if (page.total <= page.pageSize) return
         let clientHeight = document.body.clientHeight
-        if (clientHeight - _clientHeight < 40) return
+        if (clientHeight - _clientHeight + remainder < 48) return
         _clientHeight = clientHeight
         revisePageSize(el)
         getGoodsList()
@@ -157,15 +190,27 @@ onMounted(async () => {
     getGoodsList()
 })
 
+const searchFn = () => getGoodsList()
+
+// 表中单行数据被点击
+const rowClick = row => {
+    console.log(row);
+}
+
+// 替换空数据
 const replace = (row, column, cellValue, index) => {
     return cellValue || '-'
 }
 
-const activeName = ref('')
-
-const collapseChange = (e) => {
-    console.log(activeName, e)
+// 二级分类点击
+const childTypeClick = event => {
+    let tag = event.target.getAttribute('data-index')
+    if (undefined == tag) return
+    checkedType.value = tag
 }
+
+// 展开的二级分类的 name 属性
+const activeName = ref('')
 
 // 设置分类
 const setTypeFn = () => {
@@ -175,6 +220,64 @@ const setTypeFn = () => {
 
 // 设置分类对话框显隐
 const centerDialogVisible = ref(false)
+const typeList = ref([]) // 分类数据列表
+const checkedType = ref(0) // 选中的分类 0:全部,-1:其他
+const typeLoading = ref(false)
+
+// 商品类型切换
+watch(checkedType, () => {
+    let iArr = checkedType.value
+    if (!iArr) typeId = ''
+    else if (-1 == iArr) typeId = -1
+    else {
+        iArr = iArr.toString().split('.')
+        let tar = typeList.value[iArr[0] - 1]
+        if (iArr[1]) tar = tar.children[iArr[1] - 1]
+        typeId = tar.id
+    }
+    getGoodsList()
+})
+
+const allowDrop = (draggingNode, dropNode, type) => {
+    if (dropNode.data.text === 'only') return type !== 'inner'
+    if (draggingNode.data.text === 'level1') return type !== 'inner'
+    return true
+}
+
+const allowDrag = (draggingNode) => {
+    console.log(draggingNode.data.label);
+    return !draggingNode.data.label.includes('only')
+}
+
+const handleDragEnd = (draggingNode, dropNode, dropType, ev) => {
+    console.log('tree drag end:', dropNode && dropNode.label, dropType)
+}
+
+const handleObj = (target, alias = 0) => {
+    const result = []
+    for (const key in target) {
+        if (Object.hasOwnProperty.call(target, key)) {
+            const element = target[key];
+            const obj = {
+                label: element.name,
+                id: element.category_id
+            }
+            if (alias) obj['text'] = 'level' + alias
+            if (Array.isArray(element.child)) {
+                obj['children'] = handleObj(element.child, alias + 1)
+            }
+            result.push(obj)
+        }
+    }
+    return result
+}
+onMounted(async () => {
+    typeLoading.value = true
+    let [error, { data: { list }, code }] = await apis.getTypes()
+    if (error || 1 !== code) return loading.value = false
+    if (null != list && 'object' === typeof list) typeList.value = handleObj(list, 1)
+    typeLoading.value = false
+})
 
 
 </script>
@@ -194,7 +297,8 @@ const centerDialogVisible = ref(false)
             <el-main class="main">
                 <div class="top">
                     <div class="left">
-                        <el-input v-model="search" class="large search radius" placeholder="商品名称/条码/首字母/扫码" clearable />
+                        <el-input v-model="search" class="large search radius" placeholder="商品名称/条码/首字母/扫码" clearable
+                            @change="searchFn" />
                         <el-select class="select large radius" placeholder="显示设置">
                             <el-option class="sel-checkbox" value="">
                                 <el-checkbox v-model="checked1" :disabled="checkeds.checked3" label="隐藏未销售" size="large"
@@ -247,7 +351,7 @@ const centerDialogVisible = ref(false)
                 <div class="content">
                     <div class="table" v-loading="loading" element-loading-text="Loading...">
                         <el-table class="table-main" ref="multipleTableRef" :data="tableData" stripe size="large"
-                            @selection-change="val => multipleSelection = val">
+                            @selection-change="val => multipleSelection = val" @row-click="rowClick">
                             <el-table-column type="selection" width="55" />
                             <el-table-column prop="goods_name" label="商品名称" min-width="160" show-overflow-tooltip />
                             <el-table-column prop="goods_sku.goods_no" label="条码" show-overflow-tooltip
@@ -263,26 +367,26 @@ const centerDialogVisible = ref(false)
                         <el-pagination class="pagination" v-model:current-page="currentPage" :total="page.total"
                             :page-size="page.pageSize" layout="total, prev, pager, next" hide-on-single-page />
                     </div>
-                    <div class="type-shell">
+                    <div class="type-shell" v-loading="typeLoading" element-loading-text="Loading...">
                         <el-button class="tit" type="primary" size="large"
                             @click="centerDialogVisible = true">编辑分类</el-button>
                         <el-scrollbar>
                             <div class="type">
-                                <div class="item">全部分类</div>
-                                <div class="item">其他分类</div>
-                                <el-collapse v-model="activeName" accordion @change="collapseChange">
-                                    <el-collapse-item title="矿泉水" name="1">
-                                        <div class="item">农夫山泉</div>
-                                        <div class="item">冰泉</div>
-                                        <div class="item">怡宝</div>
-                                    </el-collapse-item>
-                                    <el-collapse-item title="方便面" name="2">
-                                    </el-collapse-item>
-                                    <el-collapse-item title="香烟" name="3">
-                                    </el-collapse-item>
-                                    <el-collapse-item title="名酒" name="4">
-                                    </el-collapse-item>
-                                    <el-collapse-item title="饮料" name="5">
+                                <div :class="['item', { 'active': !checkedType }]"
+                                    @click="checkedType = activeName = 0">全部分类</div>
+                                <div :class="['item', { 'active': -1 === checkedType }]"
+                                    @click="checkedType = activeName = -1">其他分类
+                                </div>
+                                <el-collapse v-model="activeName" accordion
+                                    @change="name => name && (checkedType = name)" @click="childTypeClick">
+                                    <el-collapse-item
+                                        :class="{ 'nochildren': !typeItem.children, 'active': (index + 1) === parseInt(checkedType) }"
+                                        :title="typeItem.label" :name="index + 1" v-for="(typeItem, index) in typeList"
+                                        :key="index">
+                                        <div :class="['item', { 'active': `${index + 1}.${i + 1}` === checkedType }]"
+                                            :data-index="`${index + 1}.${i + 1}`" v-for="(item, i) in typeItem.children"
+                                            :key="i">{{ item.label
+                                            }}</div>
                                     </el-collapse-item>
                                 </el-collapse>
                             </div>
@@ -293,9 +397,8 @@ const centerDialogVisible = ref(false)
         </el-container>
     </el-scrollbar>
     <el-dialog v-model="centerDialogVisible" title="分类管理" align-center :close-on-click-modal="false">
-        <el-tree :allow-drop="allowDrop" :allow-drag="allowDrag" :data="data" draggable default-expand-all node-key="id"
-            @node-drag-start="handleDragStart" @node-drag-enter="handleDragEnter" @node-drag-leave="handleDragLeave"
-            @node-drag-over="handleDragOver" @node-drag-end="handleDragEnd" @node-drop="handleDrop" />
+        <el-tree :allow-drop="allowDrop" :allow-drag="allowDrag" :data="typeList" accordion draggable node-key="tree"
+            @node-drag-end="handleDragEnd" @node-drop="handleDrop" />
         <template #footer>
             <span class="dialog-footer">
                 <el-button type="primary" @click="centerDialogVisible = false">
@@ -504,6 +607,14 @@ const centerDialogVisible = ref(false)
     transition: all .3s;
 }
 
+.content .type .nochildren:deep(.el-collapse-item__arrow) {
+    visibility: hidden;
+}
+
+.content .type .nochildren:deep(.el-collapse-item__wrap) {
+    display: none;
+}
+
 .content .type .item:hover,
 .content .type:deep(.el-collapse-item__header):hover {
     color: var(--el-color-primary);
@@ -529,10 +640,15 @@ const centerDialogVisible = ref(false)
     background-color: #d2e4ee;
 } */
 
-.active {
+.type .item.active,
+.type .active:deep(.el-collapse-item__header) {
     font-weight: 600;
     color: var(--el-color-primary) !important;
-    background-color: rgba(64, 158, 255, .1) !important;
+    background-color: rgba(64, 158, 255, .1);
+}
+
+.type .el-collapse:deep(.el-collapse-item__content .active) {
+    background-color: rgb(155 204 255 / 50%) !important;
 }
 
 /* 组件内input 大字体 */
