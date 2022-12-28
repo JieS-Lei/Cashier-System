@@ -3,17 +3,21 @@ import { useUserStore } from '~/store/modules/userStore.js'
 
 const userStore = useUserStore()
 
+export const wxapp_id = '10001' // 商城ID
+
 const base_url = {
     'production': 'http://vip.jingtoo.cn/index.php?s=/api/', // 生产环境地址
     'development': '/proxy' // 开发环境地址
 }
+export const baseURL = base_url[import.meta.env.MODE]
 
 // config change
 export const handleChangeRequestConfig = config => {
-    config.baseURL = base_url[import.meta.env.MODE]
+    config.baseURL = baseURL
     config.headers['Content-Type'] = 'multipart/form-data'
     config.data = config.data || {}
-    config.data['wxapp_id'] = '10001'
+    config.data['wxapp_id'] = wxapp_id
+    if (config.data.token) config.data.token = userStore.token || ""
     return config
 }
 
@@ -73,6 +77,5 @@ export const handleGeneralError = (errCode, errMsg) => {
         message.error(errMsg)
         return false
     }
-
     return true
 }

@@ -47,10 +47,10 @@ export const Get = (url, params = {}, clearFn) =>
             })
     })
 
-export const Post = (url, data, params = {}) => {
+export const Post = (url, data, config = {}) => {
     return new Promise(resolve => {
         instance
-            .post(url, data, { params })
+            .post(url, data, config)
             .then((result) => {
                 resolve([null, result.data])
             })

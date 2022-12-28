@@ -11,8 +11,6 @@ import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 
 import 'default-passive-events'
 
-
-
 // 创建vue实例
 const app = createApp(App)
 
@@ -25,6 +23,6 @@ app.use(pinia)
 // 挂载vue-router
 app.use(router)
 // element 全局配置
-app.use(ElementPlus, { locale: zhCn, size: 'small', zIndex: 2000, max: 3 })
+app.use(ElementPlus, { locale: zhCn, size: 'default', zIndex: 2000, max: 3 })
 // 挂载实例
 app.mount('#app')

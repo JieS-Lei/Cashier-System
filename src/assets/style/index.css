@@ -34,6 +34,11 @@ body {
     --win-min-width: 1020px;
 }
 
+img {
+    width: 100%;
+    max-width: 100%;
+}
+
 body,
 h1,
 h2,

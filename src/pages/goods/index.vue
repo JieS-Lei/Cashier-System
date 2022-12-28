@@ -3,8 +3,15 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router'
 import { apis } from '~/apis'
 import { debounce } from '~/utils'
+import { useGoodsTypeStore } from '~/store/modules/goodsTypeStore'
+
+// 组件
+import addGoodsVue from '../../components/addGoods.vue';
+import reviseTypeVue from '../../components/reviseType.vue';
 
 const router = useRouter()
+
+const goodsTypeStore = useGoodsTypeStore()
 
 const back = () => router.replace('/home')
 const escDown = event => event.key === 'Escape' && back()
@@ -50,44 +57,37 @@ watch(checked2, newValue => {
     }
 })
 
-const date = ref('') // 选择的时间
-const shortcuts = [
-    {
-        text: '最近一周',
-        value: () => {
-            const end = new Date()
-            const start = new Date()
-            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
-            return [start, end]
-        },
+// 新增商品对话框显隐
+const addGoodsVisible = ref(false)
+
+// 选择的时间
+const date = ref('')
+// 时间快捷选择选项
+const shortcuts = [{
+    text: '最近一周',
+    value: () => {
+        const end = new Date()
+        const start = new Date()
+        start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
+        return [start, end]
     },
-    {
-        text: '最近一月',
-        value: () => {
-            const end = new Date()
-            const start = new Date()
-            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30)
-            return [start, end]
-        },
+}, {
+    text: '最近一月',
+    value: () => {
+        const end = new Date()
+        const start = new Date()
+        start.setTime(start.getTime() - 3600 * 1000 * 24 * 30)
+        return [start, end]
     },
-    {
-        text: '最近三个月',
-        value: () => {
-            const end = new Date()
-            const start = new Date()
-            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90)
-            return [start, end]
-        },
+}, {
+    text: '最近三个月',
+    value: () => {
+        const end = new Date()
+        const start = new Date()
+        start.setTime(start.getTime() - 3600 * 1000 * 24 * 90)
+        return [start, end]
     },
-]
-const change = changeDate => {
-    let startTime = changeDate[0].getTime(),
-        endTime = changeDate[1].getTime()
-    getGoodsList({
-        startTime,
-        endTime
-    })
-}
+}]
 
 // 删除商品
 const deleteType = ref('')
@@ -141,14 +141,18 @@ const getGoodsList = async params => {
         page: currentPage.value,
         listRows: page.pageSize,
         search: search.value,
-        category_id: typeId,
-        ...params
+        category_id: typeId
+    }
+    // 时间
+    if (Array.isArray(date.value)) {
+        options['start_time'] = date.value[0].getTime()
+        options['end_time'] = date.value[1].getTime()
     }
     // console.log(options);
-    let [error, { data: { list }, code }] = await apis.getGoods(options)
+    let [error, { data, code }] = await apis.getGoods(options)
     if (error || 1 !== code) return loading.value = false
-    page.total = +list.total
-    tableData.value = list.data
+    page.total = +data.list.total
+    tableData.value = data.list.data
     loading.value = false
 }
 
@@ -219,7 +223,7 @@ const setTypeFn = () => {
 }
 
 // 设置分类对话框显隐
-const centerDialogVisible = ref(false)
+const reviseTypeVisible = ref(false)
 const typeList = ref([]) // 分类数据列表
 const checkedType = ref(0) // 选中的分类 0:全部,-1:其他
 const typeLoading = ref(false)
@@ -235,24 +239,12 @@ watch(checkedType, () => {
         if (iArr[1]) tar = tar.children[iArr[1] - 1]
         typeId = tar.id
     }
-    getGoodsList()
+    if (!currentPage.value - 1) getGoodsList()
+    else currentPage.value = 1
+
 })
 
-const allowDrop = (draggingNode, dropNode, type) => {
-    if (dropNode.data.text === 'only') return type !== 'inner'
-    if (draggingNode.data.text === 'level1') return type !== 'inner'
-    return true
-}
-
-const allowDrag = (draggingNode) => {
-    console.log(draggingNode.data.label);
-    return !draggingNode.data.label.includes('only')
-}
-
-const handleDragEnd = (draggingNode, dropNode, dropType, ev) => {
-    console.log('tree drag end:', dropNode && dropNode.label, dropType)
-}
-
+// 处理商品类型数据
 const handleObj = (target, alias = 0) => {
     const result = []
     for (const key in target) {
@@ -265,25 +257,40 @@ const handleObj = (target, alias = 0) => {
             if (alias) obj['text'] = 'level' + alias
             if (Array.isArray(element.child)) {
                 obj['children'] = handleObj(element.child, alias + 1)
-            }
+            } else if (alias <= 1) obj['children'] = []
             result.push(obj)
         }
     }
     return result
 }
-onMounted(async () => {
-    typeLoading.value = true
-    let [error, { data: { list }, code }] = await apis.getTypes()
-    if (error || 1 !== code) return loading.value = false
-    if (null != list && 'object' === typeof list) typeList.value = handleObj(list, 1)
-    typeLoading.value = false
-})
 
+// 请求商品类型数据
+const getTypeList = async () => {
+    typeLoading.value = true
+    let [error, { data, code }] = await apis.getTypes()
+    if (error || 1 !== code) return loading.value = false
+    if (null != data && 'object' === typeof data) typeList.value = handleObj(data, 1)
+    goodsTypeStore.setList(typeList.value) //pinia
+    typeLoading.value = false
+}
+onMounted(() => getTypeList())
+
+// 是否通过新增商品打开的分类列表
+let isAddGoodsVueOpenType = false
+// 关闭分类
+const itemType = ref({})
+const reviseTypeDone = typeObj => {
+    reviseTypeVisible.value = false
+    if (isAddGoodsVueOpenType) {
+        itemType.value = typeObj ?? (itemType.value.id ? itemType.value : {})
+        isAddGoodsVueOpenType = false
+    }
+}
 
 </script>
 <template>
     <el-scrollbar>
-        <el-container class="container">
+        <el-container class="container" style="width: 100vw;">
             <el-header class="header">
                 <el-button class="esc" size="large" text @click="back">
                     <el-icon size="20">
@@ -322,15 +329,16 @@ onMounted(async () => {
                             <span>创建时间</span>
                             <el-date-picker class="picker radius" v-model="date" type="daterange" unlink-panels
                                 :shortcuts="shortcuts" range-separator="至" start-placeholder="开始日期"
-                                end-placeholder="结束日期" size="large" @change="change" />
+                                end-placeholder="结束日期" size="large" @change="getGoodsList" />
                         </div>
                     </div>
                     <div class="right">
                         <el-button class="addBtn radius" plain size="large">导入商品</el-button>
-                        <el-button class="addBtn radius" type="primary" size="large">新增商品</el-button>
+                        <el-button class="addBtn radius" type="primary" size="large" @click="addGoodsVisible = true">
+                            新增商品 </el-button>
                     </div>
                 </div>
-                <div class="btns radius">
+                <div div class=" btns radius">
                     <el-select v-model="deleteType" class="select" placeholder="批量删除" size="large"
                         @change="deleteChange">
                         <el-option label="删除已选商品" value="deleteChecked" />
@@ -342,7 +350,7 @@ onMounted(async () => {
                     <el-button class="radius" plain size="large" @click="setTypeFn">设置分类</el-button>
                     <el-button class="radius" plain size="large">设置单价</el-button>
                     <el-button class="radius" plain size="large">批量改价</el-button>
-                    <el-button class="radius" plain size="large">设置库存上/下限</el-button>
+                    <el-button class="radius" plain size="large" disabled>设置库存上/下限</el-button>
                     <el-select v-model="sort" class="sort" placeholder="排序方式" size="large" @change="sortChange">
                         <el-option label="最新创建" value="new" aria-checked />
                         <el-option label="首字母升序" value="initial" />
@@ -356,7 +364,7 @@ onMounted(async () => {
                             <el-table-column prop="goods_name" label="商品名称" min-width="160" show-overflow-tooltip />
                             <el-table-column prop="goods_sku.goods_no" label="条码" show-overflow-tooltip
                                 align="center" />
-                            <el-table-column prop="type" label="分类" align="center" />
+                            <el-table-column prop="category_name" label="分类" show-overflow-tooltip align="center" />
                             <el-table-column prop="goods_sku.goods_price" label="售价" align="center" />
                             <el-table-column prop="goods_sku.goods_vip_price" label="会员价" align="center" />
                             <el-table-column prop="goods_sku.goods_cost_price" label="进价" align="center" />
@@ -369,24 +377,30 @@ onMounted(async () => {
                     </div>
                     <div class="type-shell" v-loading="typeLoading" element-loading-text="Loading...">
                         <el-button class="tit" type="primary" size="large"
-                            @click="centerDialogVisible = true">编辑分类</el-button>
+                            @click="reviseTypeVisible = true">编辑分类</el-button>
                         <el-scrollbar>
                             <div class="type">
                                 <div :class="['item', { 'active': !checkedType }]"
                                     @click="checkedType = activeName = 0">全部分类</div>
-                                <div :class="['item', { 'active': -1 === checkedType }]"
+                                <!-- <div :class="['item', { 'active': -1 === checkedType }]"
                                     @click="checkedType = activeName = -1">其他分类
-                                </div>
+                                </div> -->
                                 <el-collapse v-model="activeName" accordion
                                     @change="name => name && (checkedType = name)" @click="childTypeClick">
                                     <el-collapse-item
-                                        :class="{ 'nochildren': !typeItem.children, 'active': (index + 1) === parseInt(checkedType) }"
-                                        :title="typeItem.label" :name="index + 1" v-for="(typeItem, index) in typeList"
-                                        :key="index">
+                                        :class="{ 'nochildren': !typeItem.children?.length, 'active': (index + 1) === parseInt(checkedType) }"
+                                        :name="index + 1" v-for="(typeItem, index) in typeList" :key="typeItem.id">
+                                        <template #title>
+                                            <el-tooltip :disabled="typeItem.label.length <= 4" effect="dark"
+                                                :content="typeItem.label" placement="left">
+                                                <span class="overflow">{{ typeItem.label }}</span>
+                                            </el-tooltip>
+                                        </template>
                                         <div :class="['item', { 'active': `${index + 1}.${i + 1}` === checkedType }]"
                                             :data-index="`${index + 1}.${i + 1}`" v-for="(item, i) in typeItem.children"
-                                            :key="i">{{ item.label
-                                            }}</div>
+                                            :key="i">
+                                            {{ item.label }}
+                                        </div>
                                     </el-collapse-item>
                                 </el-collapse>
                             </div>
@@ -396,17 +410,11 @@ onMounted(async () => {
             </el-main>
         </el-container>
     </el-scrollbar>
-    <el-dialog v-model="centerDialogVisible" title="分类管理" align-center :close-on-click-modal="false">
-        <el-tree :allow-drop="allowDrop" :allow-drag="allowDrag" :data="typeList" accordion draggable node-key="tree"
-            @node-drag-end="handleDragEnd" @node-drop="handleDrop" />
-        <template #footer>
-            <span class="dialog-footer">
-                <el-button type="primary" @click="centerDialogVisible = false">
-                    Confirm
-                </el-button>
-            </span>
-        </template>
-    </el-dialog>
+    <!-- 新增商品 -->
+    <addGoodsVue :show="addGoodsVisible" :itemType="itemType"
+        @typeClick="isAddGoodsVueOpenType = reviseTypeVisible = true" @done="addGoodsVisible = false" />
+    <!-- 修改分类 -->
+    <reviseTypeVue :show="reviseTypeVisible" @updataList="getTypeList" @done="reviseTypeDone" />
 </template>
 <style scoped>
 .container {
@@ -607,6 +615,12 @@ onMounted(async () => {
     transition: all .3s;
 }
 
+.type .overflow {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .content .type .nochildren:deep(.el-collapse-item__arrow) {
     visibility: hidden;
 }
@@ -635,10 +649,6 @@ onMounted(async () => {
     border-color: #fff;
     background-color: #e2ecfe;
 }
-
-/* .content .type:deep(.el-collapse .el-collapse-item__content div):hover {
-    background-color: #d2e4ee;
-} */
 
 .type .item.active,
 .type .active:deep(.el-collapse-item__header) {
