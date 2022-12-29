@@ -39,6 +39,7 @@ const handleStart = event => {
     animTimer = setTimeout(() => anim.value = false, childTypeList.value.length * 100)
 }
 
+// 一级分类点击移动后处理函数
 const handleEnd = event => {
     itemKey.value = event.newIndex
     if (!isSolt) isSolt = true
@@ -68,6 +69,7 @@ const clickItemFn = (level, event) => {
             showInput: true,
             inputPlaceholder: '请输入新名称',
             confirmButtonText: '修改',
+            draggable: true,
             beforeClose: async (action, instance, done) => {
                 if (action !== 'confirm') return done()
                 let newLabel = (instance.inputValue ?? '').trim()
@@ -140,6 +142,7 @@ const addType = async isChild => {
         showInput: true,
         inputPlaceholder: '请输入名称',
         confirmButtonText: '立即新增',
+        draggable: true,
         beforeClose: async (action, instance, done) => {
             if (action !== 'confirm') return done()
             let label = (instance.inputValue ?? '').trim()
@@ -173,7 +176,7 @@ const addType = async isChild => {
         .catch(() => false)
 }
 
-// 点击更新排序
+// 点击确定更新排序
 const loading = ref(false)
 const handelList = list => {
     let sortWeight = 1

@@ -8,6 +8,7 @@ import { useGoodsTypeStore } from '~/store/modules/goodsTypeStore'
 // 组件
 import addGoodsVue from '../../components/addGoods.vue';
 import reviseTypeVue from '../../components/reviseType.vue';
+import setUnitVue from '../../components/setUnit.vue';
 
 const router = useRouter()
 
@@ -95,21 +96,31 @@ const deleteChange = async type => {
     deleteType.value = ''
     if ('deleteChecked' === type) {
         // 删除选中
-        if (!multipleSelection.value.length) return ElMessage.warning({ message: '您未选择任何商品', showClose: true, grouping: true })
-        let goodIds = multipleSelection.value.map(item => item.goods_id)
-        loading = true
-        let [error, { data, code }] = await apis.deleteGoods({
-            goodsId: goodIds
+        if (!multipleSelection.value.length) return ElMessage.warning({ message: '您未选择任何商品', grouping: true })
+        ElMessageBox({
+            message: '是否删除选中商品',
+            title: '提示',
+            confirmButtonText: '删除',
+            type: 'warning',
+            draggable: true,
+            beforeClose: async (action, instance, done) => {
+                if (action !== 'confirm') return done()
+                instance.confirmButtonLoading = true
+                instance.confirmButtonText = '删除中'
+                let goodIds = multipleSelection.value.map(item => item.goods_id)
+                let [error, { code }] = await await apis.deleteGoodsToId({ goodsId: goodIds.join() })
+                instance.confirmButtonLoading = false
+                instance.confirmButtonText = '删除'
+                if (error || 1 !== code) return ElMessage('删除失败')
+                getGoodsList()
+                done()
+            }
         })
-        if (error || 1 !== code) {
-            ElMessage.error('删除失败')
-            return loading = false
-        }
-        console.log(data)
-        getGoodsList()
-        ElMessage.success('修改成功')
+            .then(() => ElMessage.success('删除成功'))
+            .catch(() => false)
     } else if ('typeDelete' === type) {
         // 按类型删除
+        // deleteGoodsToTypeId
     }
 }
 
@@ -273,7 +284,7 @@ const getTypeList = async () => {
     goodsTypeStore.setList(typeList.value) //pinia
     typeLoading.value = false
 }
-onMounted(() => getTypeList())
+getTypeList()
 
 // 是否通过新增商品打开的分类列表
 let isAddGoodsVueOpenType = false
@@ -287,6 +298,16 @@ const reviseTypeDone = typeObj => {
     }
 }
 
+// 单位管理对话框显隐
+const setUnitVisible = ref(false)
+const unitItem = ref({})
+
+// 新增商品完成
+const addGoodsEnd = () => {
+    addGoodsVisible.value = false
+    itemType.value = {} // 初始化分类
+    getGoodsList() // 刷新数据
+}
 </script>
 <template>
     <el-scrollbar>
@@ -411,10 +432,13 @@ const reviseTypeDone = typeObj => {
         </el-container>
     </el-scrollbar>
     <!-- 新增商品 -->
-    <addGoodsVue :show="addGoodsVisible" :itemType="itemType"
-        @typeClick="isAddGoodsVueOpenType = reviseTypeVisible = true" @done="addGoodsVisible = false" />
+    <addGoodsVue :show="addGoodsVisible" :unitItem="unitItem" :itemType="itemType" @done="addGoodsVisible = false"
+        @typeClick="isAddGoodsVueOpenType = reviseTypeVisible = true" @unitClick="setUnitVisible = true"
+        @addEnd="addGoodsEnd" />
     <!-- 修改分类 -->
     <reviseTypeVue :show="reviseTypeVisible" @updataList="getTypeList" @done="reviseTypeDone" />
+    <!-- 单位管理 -->
+    <setUnitVue :show="setUnitVisible" @checked="row => unitItem = row" @done="setUnitVisible = false"></setUnitVue>
 </template>
 <style scoped>
 .container {

@@ -10,7 +10,6 @@ export const useGoodsTypeStore = defineStore('goodsType', {
     actions: {
         setList(list) {
             this.typeList = list
-            console.log(this.typeList);
         }
     }
 })

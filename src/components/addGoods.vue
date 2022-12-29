@@ -1,9 +1,8 @@
 <script setup>
-import { apis } from '~/apis';
-import { genFileId } from 'element-plus'
-import { nextTick } from 'vue';
+import { apis } from '~/apis'
+import { ElMessage, genFileId } from 'element-plus'
 
-const emit = defineEmits(['done', 'typeClick'])
+const emit = defineEmits(['done', 'typeClick', 'unitClick', 'addEnd'])
 const props = defineProps({
   show: {
     type: Boolean,
@@ -11,7 +10,11 @@ const props = defineProps({
   },
   itemType: {
     type: Object,
-    required: true
+    default: {}
+  },
+  unitItem: {
+    type: Object,
+    default: {}
   }
 })
 
@@ -23,7 +26,7 @@ const form = reactive({
   goods_price: '0.00', // 售价
   goods_cost_price: '0.00', // 进价
   goods_vip_price: '0.00', // vip价格
-  goods_unit: '', // 商品单位
+  goods_unit: computed(() => props.unitItem.unit_id ?? ''), // 商品单位
   category_id: computed(() => props.itemType.id ?? ''), // 商品分类id
   stock_num: 0, // 库存
   goods_production_date: '', // 生产日期
@@ -34,7 +37,9 @@ const form = reactive({
 let openCheckedTypeValidate = false
 const typeName = computed(() => {
   if (!openCheckedTypeValidate) openCheckedTypeValidate = true
-  else if (formRef.value) formRef.value.validateField('category_id')
+  else if (formRef.value) formRef.value.validateField('category_id', (isValid, invalidFields) => {
+    if (!isValid) return console.warn(invalidFields);
+  })
   return props.itemType.label ?? '请选择'
 })
 
@@ -124,31 +129,45 @@ const handlePictureCardPreview = file => {
 }
 
 // 上传处理
-const upload = options => {
-  console.log(options);
-  return new Promise((resolve, reject) => {
-    apis.upload({
-      onProgress: options.onProgress,
-      data: {
-        'iFile': options.file
-      }
-    }).then(([err, res]) => {
-      if (err || 1 !== res.code) {
-        let e = err || res
-        return reject(e)
-      }
-      resolve(res)
-    })
+const upload = options => new Promise((resolve, reject) => {
+  apis.upload({
+    onProgress: options.onProgress,
+    data: {
+      'iFile': options.file
+    }
+  }).then(([err, res]) => {
+    if (err || 1 !== res.code) {
+      let e = err || res
+      return reject(e)
+    }
+    resolve(res)
+  })
+})
+
+// 新增商品
+const submit = isStorage => {
+  if (!formRef.value) return ElMessage.warning('初始化未完成，请稍后重试！')
+  formRef.value.validate().then(async isValid => {
+    if (!isValid) return console.warn('表单验证失败')
+    // return console.log(form);
+    if (isStorage) window.localStorage.setItem('__ADD_GOODS_FORM_DATA', JSON.stringify(form))
+    let [error, { code }] = await apis.addGoods({ ...form })
+    if (error || 1 !== code) return ElMessage('商品新增失败')
+    ElMessage.success('商品新增成功')
+    formRef.value.resetFields()
+    emit('addEnd')
+  }).catch(err => {
+    console.warn('error', err)
   })
 }
 
 </script>
 
 <template>
-  <el-dialog :model-value="props.show" width="650px" title="新增商品" align-center :close-on-click-modal="false"
-    :before-close="() => emit('done')">
-    <el-scrollbar height="300px" noresize>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" size="large" style="overflow-x: hidden;">
+  <el-dialog class="addGoodsDialog" destroy-on-close :model-value="props.show" width="650px" title="新增商品" align-center
+    :close-on-click-modal="false" :before-close="() => emit('done')" style="">
+    <el-scrollbar height="400px" noresize>
+      <el-form ref="formRef" class="from" :model="form" :rules="rules" label-width="80px" scroll-to-error size="large">
         <el-form-item label="商品名称" prop="goods_name">
           <el-input v-model="form.goods_name" maxlength="50" />
         </el-form-item>
@@ -179,7 +198,7 @@ const upload = options => {
           <el-col :span="12">
             <el-form-item label="单位">
               <div class="select" @click="$emit('unitClick')">
-                请选择
+                {{ props.unitItem.name || '请选择' }}
                 <el-icon>
                   <epArrowRight />
                 </el-icon>
@@ -256,8 +275,12 @@ const upload = options => {
     </el-scrollbar>
     <template #footer>
       <span class="dialog-footer">
-        <el-button type="primary" @click="$emit('done')">
-          Confirm
+        <el-button @click="$emit('done')">取消</el-button>
+        <el-button @click="submit(true)">
+          保存并新增
+        </el-button>
+        <el-button type="primary" @click="submit(false)">
+          立即新增
         </el-button>
       </span>
     </template>
@@ -265,6 +288,11 @@ const upload = options => {
 </template>
 
 <style scoped>
+.from {
+  padding: 0 20px;
+  overflow-x: hidden;
+}
+
 .select {
   width: 100%;
   display: flex;
@@ -315,5 +343,11 @@ const upload = options => {
 
 .ps span+span {
   margin-top: 5px;
+}
+</style>
+<style>
+.addGoodsDialog .el-dialog__body {
+  padding-left: 0;
+  padding-right: 0;
 }
 </style>
