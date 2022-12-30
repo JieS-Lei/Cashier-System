@@ -16,7 +16,7 @@ export const goodsApi = {
     // 修改分类名称
     upadteType: data => Post('cashier/editCategory', data),
     // 删除分类
-    deleteType: typeId => Post('cashier/delCategory', { category_id: typeId }),
+    deleteType: typeIds => Post('cashier/delCategory', { category_id: typeIds }),
     // 新增分类
     addType: data => Post('cashier/addCategory', data),
     // 分类排序更新
@@ -30,9 +30,9 @@ export const goodsApi = {
     // 添加商品
     addGoods: data => Post('cashier/addGoods', data),
     // 删除商品（可批量）
-    deleteGoodsToId: data => Post('cashier/delGoods', data),
+    deleteGoodsById: goodsIds => Post('cashier/delGoods', { goodsId: goodsIds }),
     // 分类ID批量删除商品
-    deleteGoodsTotypeId: typeId => Post('cashier/delGoods', { category_id: typeId }),
+    deleteGoodsByTypeId: typeIds => Post('cashier/delGoodsByCatId', { category_id: typeIds }),
 };
 
 // 文件上传

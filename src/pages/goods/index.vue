@@ -9,6 +9,7 @@ import { useGoodsTypeStore } from '~/store/modules/goodsTypeStore'
 import addGoodsVue from '../../components/addGoods.vue';
 import reviseTypeVue from '../../components/reviseType.vue';
 import setUnitVue from '../../components/setUnit.vue';
+import delGoodsToTypeVue from '../../components/delGoodsToType.vue';
 
 const router = useRouter()
 
@@ -91,6 +92,7 @@ const shortcuts = [{
 }]
 
 // 删除商品
+const delGoodsToTypeVisible = ref(false)
 const deleteType = ref('')
 const deleteChange = async type => {
     deleteType.value = ''
@@ -108,7 +110,7 @@ const deleteChange = async type => {
                 instance.confirmButtonLoading = true
                 instance.confirmButtonText = '删除中'
                 let goodIds = multipleSelection.value.map(item => item.goods_id)
-                let [error, { code }] = await await apis.deleteGoodsToId({ goodsId: goodIds.join() })
+                let [error, { code }] = await await apis.deleteGoodsById(goodIds.join())
                 instance.confirmButtonLoading = false
                 instance.confirmButtonText = '删除'
                 if (error || 1 !== code) return ElMessage('删除失败')
@@ -118,16 +120,11 @@ const deleteChange = async type => {
         })
             .then(() => ElMessage.success('删除成功'))
             .catch(() => false)
-    } else if ('typeDelete' === type) {
-        // 按类型删除
-        // deleteGoodsToTypeId
-    }
+    } else if ('typeDelete' === type) delGoodsToTypeVisible.value = true
 }
 
-const sort = ref('new')
-const sortChange = value => {
-    console.log(value);
-}
+const sort = ref('timeDesc')
+const sortChange = changeVal => getGoodsList()
 
 // 表格
 let typeId = '' // 选中的id
@@ -152,7 +149,8 @@ const getGoodsList = async params => {
         page: currentPage.value,
         listRows: page.pageSize,
         search: search.value,
-        category_id: typeId
+        category_id: typeId,
+        sortType: sort.value,
     }
     // 时间
     if (Array.isArray(date.value)) {
@@ -256,7 +254,7 @@ watch(checkedType, () => {
 })
 
 // 处理商品类型数据
-const handleObj = (target, alias = 0) => {
+const handleObj = (target, alias = 0, parentId) => {
     const result = []
     for (const key in target) {
         if (Object.hasOwnProperty.call(target, key)) {
@@ -266,8 +264,9 @@ const handleObj = (target, alias = 0) => {
                 id: element.category_id
             }
             if (alias) obj['text'] = 'level' + alias
+            if (parentId) obj['parentId'] = parentId
             if (Array.isArray(element.child)) {
-                obj['children'] = handleObj(element.child, alias + 1)
+                obj['children'] = handleObj(element.child, alias + 1, obj.id)
             } else if (alias <= 1) obj['children'] = []
             result.push(obj)
         }
@@ -301,11 +300,13 @@ const reviseTypeDone = typeObj => {
 // 单位管理对话框显隐
 const setUnitVisible = ref(false)
 const unitItem = ref({})
+const setUnitInitId = ref(-1)
 
 // 新增商品完成
 const addGoodsEnd = () => {
     addGoodsVisible.value = false
     itemType.value = {} // 初始化分类
+    if (unitItem.value.unit_id) unitItem.value = {} // 初始化单位
     getGoodsList() // 刷新数据
 }
 </script>
@@ -373,8 +374,8 @@ const addGoodsEnd = () => {
                     <el-button class="radius" plain size="large">批量改价</el-button>
                     <el-button class="radius" plain size="large" disabled>设置库存上/下限</el-button>
                     <el-select v-model="sort" class="sort" placeholder="排序方式" size="large" @change="sortChange">
-                        <el-option label="最新创建" value="new" aria-checked />
-                        <el-option label="首字母升序" value="initial" />
+                        <el-option label="最新创建" value="timeDesc" aria-checked />
+                        <el-option label="首字母升序" value="charAsc" />
                     </el-select>
                 </div>
                 <div class="content">
@@ -438,7 +439,10 @@ const addGoodsEnd = () => {
     <!-- 修改分类 -->
     <reviseTypeVue :show="reviseTypeVisible" @updataList="getTypeList" @done="reviseTypeDone" />
     <!-- 单位管理 -->
-    <setUnitVue :show="setUnitVisible" @checked="row => unitItem = row" @done="setUnitVisible = false"></setUnitVue>
+    <setUnitVue :show="setUnitVisible" @checked="row => unitItem = row" @done="setUnitVisible = false" />
+    <!-- 按分类删除商品 -->
+    <delGoodsToTypeVue v-if="delGoodsToTypeVisible" :show="delGoodsToTypeVisible" @done="delGoodsToTypeVisible = false"
+        @delGoods="getGoodsList" @delType="getTypeList" />
 </template>
 <style scoped>
 .container {

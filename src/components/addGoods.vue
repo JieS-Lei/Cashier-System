@@ -27,7 +27,10 @@ const form = reactive({
   goods_cost_price: '0.00', // 进价
   goods_vip_price: '0.00', // vip价格
   goods_unit: computed(() => props.unitItem.unit_id ?? ''), // 商品单位
-  category_id: computed(() => props.itemType.id ?? ''), // 商品分类id
+  category_id: computed({
+    get: () => props.itemType.id ?? '',
+    set: () => false
+  }), // 商品分类id
   stock_num: 0, // 库存
   goods_production_date: '', // 生产日期
   goods_expiration_day: '', // 保质期
@@ -154,6 +157,7 @@ const submit = isStorage => {
     let [error, { code }] = await apis.addGoods({ ...form })
     if (error || 1 !== code) return ElMessage('商品新增失败')
     ElMessage.success('商品新增成功')
+    openCheckedTypeValidate = false
     formRef.value.resetFields()
     emit('addEnd')
   }).catch(err => {

@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 
-export const useUserStore = defineStore('user', {
+export const goodsUnitStore = defineStore('goodsUnit', {
     persist: {
-        key: 'USER',
+        key: 'GOODSUNIT',
         storage: sessionStorage
     }, // 持久化
     state: () => {

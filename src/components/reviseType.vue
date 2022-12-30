@@ -289,7 +289,7 @@ const submit = async () => {
                 </div>
             </el-col>
         </el-row>
-        <template #footer class="diy">
+        <template #footer>
             <span class="dialog-footer">
                 <el-button :loading="loading" type="primary" size="large" auto-insert-space style="width: 50%;"
                     @click="submit">完成</el-button>

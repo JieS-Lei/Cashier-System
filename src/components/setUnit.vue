@@ -1,5 +1,4 @@
 <script setup>
-import { onMounted } from 'vue';
 import { apis } from '~/apis'
 
 const emit = defineEmits(['done', 'checked'])
@@ -18,6 +17,7 @@ apis.getGoodsUnit().then(([error, { data, code }]) => {
     loading.value = false
     if (error || 1 !== code) return false
     if (Array.isArray(data.list)) list.value = data.list
+
 })
 
 // 是否编辑状态
