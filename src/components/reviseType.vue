@@ -1,5 +1,5 @@
 <script setup>
-import { useGoodsTypeStore } from '~/store/modules/goodsTypeStore'
+import { useGoodsStore } from '~/store/modules/goodsStore'
 import { storeToRefs } from 'pinia'
 import draggable from "vuedraggable";
 import { apis } from '~/apis';
@@ -12,8 +12,8 @@ const props = defineProps({
     }
 })
 
-const store = useGoodsTypeStore()
-const { typeList } = storeToRefs(store) // 一级分类
+const store = useGoodsStore()
+const { typeList, checkedType } = storeToRefs(store) // 一级分类
 const itemKey = ref(-1) // 一级分类数组下标
 const childItemKey = ref(-1) // 二级分类下标
 
@@ -23,10 +23,6 @@ let animTimer = null // 移除二级分类动画定时器
 let isSolt = false // 是否进行过排序
 
 const childTypeList = ref([])// 二级分类数据
-
-// watch(typeList, newVal => {
-//     console.log(typeList.value);
-// })
 
 // 点击一级分类处理函数
 const handleStart = event => {
@@ -125,11 +121,11 @@ const clickItemFn = (level, event) => {
 }
 
 // 关闭对话框，初始化数据
-const close = typeItem => {
-    if ('function' === typeof typeItem) typeItem = null
+const close = () => {
     itemKey.value = -1
     childTypeList.value = []
-    emit('done', typeItem) // 关闭
+    if (!checkedType.value.id) checkedType.value = {}
+    emit('done') // 关闭
 }
 
 // 新增分类
@@ -192,20 +188,21 @@ const handelList = list => {
     return arr
 }
 const submit = async () => {
-    let typeItem = null
+    let typeItem = {}
     if (childItemKey.value !== -1) typeItem = childTypeList.value[childItemKey.value]
     else if (itemKey.value !== -1) typeItem = typeList.value[itemKey.value]
-    if (!isSolt) return close(typeItem) // 关闭
+    checkedType.value = typeItem
+    if (!isSolt) return close() // 关闭
     let newTypeList = handelList(typeList.value)
     loading.value = true
-    let [error, { data, code }] = await apis.sortType({ categorys: JSON.stringify(newTypeList) })
+    let [error, { code }] = await apis.sortType({ categorys: JSON.stringify(newTypeList) })
     if (error || 1 !== code) {
-        ElMessage(`新增${isChild ? '子' : ''}分类失败`)
+        ElMessage('商品分类排序失败')
         return loading.value = false
     }
     loading.value = false
-    emit('updataList', typeItem) // 更新数据
-    close(typeItem) // 关闭
+    emit('updataList', typeList.value) // 更新数据
+    close() // 关闭
 }
 
 </script>

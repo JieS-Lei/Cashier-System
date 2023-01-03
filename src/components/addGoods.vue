@@ -1,6 +1,9 @@
 <script setup>
 import { apis } from '~/apis'
-import { ElMessage, genFileId } from 'element-plus'
+import { genFileId } from 'element-plus'
+import { useGoodsStore } from '~/store/modules/goodsStore'
+import { storeToRefs } from 'pinia'
+import { watch } from 'vue';
 
 const emit = defineEmits(['done', 'typeClick', 'unitClick', 'addEnd'])
 const props = defineProps({
@@ -8,42 +11,65 @@ const props = defineProps({
     type: Boolean,
     required: true
   },
-  itemType: {
-    type: Object,
-    default: {}
-  },
-  unitItem: {
-    type: Object,
-    default: {}
-  }
+  rowForm: Object
 })
+const store = useGoodsStore()
+const { checkedType, checkedUnit, rowForm } = storeToRefs(store)
 
 const formRef = ref() // 表单实例
-const form = reactive({
+const defaultFrom = {
   goods_name: '', // 名称
   short_name: '', // 简称
   goods_no: '', // 条码
   goods_price: '0.00', // 售价
   goods_cost_price: '0.00', // 进价
   goods_vip_price: '0.00', // vip价格
-  goods_unit: computed(() => props.unitItem.unit_id ?? ''), // 商品单位
-  category_id: computed({
-    get: () => props.itemType.id ?? '',
-    set: () => false
-  }), // 商品分类id
+  goods_unit: computed(() => checkedUnit.value.unit_id ?? ''), // 商品单位
+  category_id: checkedType.value.id ?? '', // 商品分类id
   stock_num: 0, // 库存
   goods_production_date: '', // 生产日期
   goods_expiration_day: '', // 保质期
-  image: '' // 图片
+  image_id: '' // 图片id
+}
+const form = reactive({
+  ...defaultFrom
 })
 
-let openCheckedTypeValidate = false
-const typeName = computed(() => {
-  if (!openCheckedTypeValidate) openCheckedTypeValidate = true
-  else if (formRef.value) formRef.value.validateField('category_id', (isValid, invalidFields) => {
+watch(checkedType, () => {
+  form.category_id = checkedType.value.id ?? ''
+  if (formRef.value) formRef.value.validateField('category_id', (isValid, invalidFields) => {
     if (!isValid) return console.warn(invalidFields);
   })
-  return props.itemType.label ?? '请选择'
+})
+
+const isRow = ref(!!rowForm.value.goods_id)
+watch(rowForm, newVal => {
+  isRow.value = !!newVal.goods_id
+  if (!isRow.value) return
+  form.goods_name = rowForm.value.goods_name
+  form.short_name = rowForm.value.short_name
+  form.goods_no = rowForm.value.goods_no
+  form.goods_price = rowForm.value.goods_sku.goods_price
+  form.goods_vip_price = rowForm.value.goods_sku.goods_vip_price
+  form.goods_cost_price = rowForm.value.goods_sku.goods_cost_price
+  form.stock_num = rowForm.value.goods_sku.stock_num
+  form.goods_expiration_day = rowForm.value.goods_sku.goods_expiration_day
+  let unitId = rowForm.value.goods_sku.goods_unit,
+    typeObj = rowForm.value.category ?? {},
+    date = rowForm.value.goods_sku.goods_production_date
+  if (date) {
+    form.goods_production_date = new Date(date * 1000)
+  }
+  if (typeObj.category_id) checkedType.value = {
+    label: typeObj.name,
+    id: typeObj.category_id
+  }
+  if (unitId) {
+    checkedUnit.value = {
+      unit_id: unitId,
+      name: rowForm.value.goods_sku.goods_unit_name
+    }
+  }
 })
 
 const rules = reactive({
@@ -144,32 +170,75 @@ const upload = options => new Promise((resolve, reject) => {
       return reject(e)
     }
     resolve(res)
+    form.image_id = res.data.image_id
   })
 })
 
-// 新增商品
-const submit = isStorage => {
+// 新增商品 | 修改商品[isUpdata]
+const submit = (isClose, isUpdata) => {
   if (!formRef.value) return ElMessage.warning('初始化未完成，请稍后重试！')
   formRef.value.validate().then(async isValid => {
     if (!isValid) return console.warn('表单验证失败')
-    // return console.log(form);
-    if (isStorage) window.localStorage.setItem('__ADD_GOODS_FORM_DATA', JSON.stringify(form))
-    let [error, { code }] = await apis.addGoods({ ...form })
-    if (error || 1 !== code) return ElMessage('商品新增失败')
-    ElMessage.success('商品新增成功')
-    openCheckedTypeValidate = false
-    formRef.value.resetFields()
+    let options = { ...form }
+    if (form.goods_production_date) options.goods_production_date = form.goods_production_date.getTime() / 1000
+    if (isUpdata) options['goods_id'] = rowForm.value.goods_id
+    let [error, { code }] = await apis[isUpdata ? 'updataGoods' : 'addGoods'](options)
+    if (error || 1 !== code) return ElMessage(`商品${isUpdata ? '修改' : '新增'}失败`)
+    ElMessage.success(`商品${isUpdata ? '修改' : '新增'}成功`)
+    if (isUpdata) {
+      checkedUnit.value = {} // 清空选中单位
+      checkedType.value = {} // 清空选中分类
+      formRef.value.resetFields()
+    }
     emit('addEnd')
+    if (isClose) emit('done')
   }).catch(err => {
     console.warn('error', err)
   })
+}
+
+// 关闭对话框
+const close = () => {
+  emit('done')
+  rowForm.value = {}
+  checkedUnit.value = {} // 清空选中单位
+  checkedType.value = {} // 清空选中分类
+  formRef.value.resetFields()
+  for (const key in defaultFrom) {
+    if (Object.hasOwnProperty.call(defaultFrom, key)) form[key] = defaultFrom[key]
+  }
+}
+
+// 修改商品信息
+const remove = () => {
+  ElMessageBox({
+    message: '是否删除商品',
+    title: '提示',
+    confirmButtonText: '删除',
+    type: 'warning',
+    draggable: true,
+    beforeClose: async (action, instance, done) => {
+      if (action !== 'confirm') return done()
+      instance.confirmButtonLoading = true
+      instance.confirmButtonText = '删除中'
+      let [error, { code }] = await apis.deleteGoodsById(rowForm.value.goods_id)
+      instance.confirmButtonLoading = false
+      instance.confirmButtonText = '删除'
+      if (error || 1 !== code) return ElMessage('删除失败')
+      done()
+      close()
+      emit('addEnd')
+    }
+  })
+    .then(() => ElMessage.success('删除成功'))
+    .catch(() => false)
 }
 
 </script>
 
 <template>
   <el-dialog class="addGoodsDialog" destroy-on-close :model-value="props.show" width="650px" title="新增商品" align-center
-    :close-on-click-modal="false" :before-close="() => emit('done')" style="">
+    :close-on-click-modal="false" :before-close="close" style="">
     <el-scrollbar height="400px" noresize>
       <el-form ref="formRef" class="from" :model="form" :rules="rules" label-width="80px" scroll-to-error size="large">
         <el-form-item label="商品名称" prop="goods_name">
@@ -177,13 +246,13 @@ const submit = isStorage => {
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="商品条码">
+            <el-form-item label="商品条码" prop="goods_no">
               <el-input v-model="form.goods_no" maxlength="16"
                 :formatter="value => value = value.replace(/[^\da-zA-Z]/g, '')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="商品简称">
+            <el-form-item label="商品简称" prop="short_name">
               <el-input v-model="form.short_name" maxlength="4" />
             </el-form-item>
           </el-col>
@@ -192,7 +261,7 @@ const submit = isStorage => {
           <el-col :span="12">
             <el-form-item label="商品分类" prop="category_id">
               <div class="select" @click="$emit('typeClick')">
-                {{ typeName }}
+                {{ checkedType.label ?? '请选择' }}
                 <el-icon>
                   <epArrowRight />
                 </el-icon>
@@ -202,7 +271,7 @@ const submit = isStorage => {
           <el-col :span="12">
             <el-form-item label="单位">
               <div class="select" @click="$emit('unitClick')">
-                {{ props.unitItem.name || '请选择' }}
+                {{ checkedUnit.name || '请选择' }}
                 <el-icon>
                   <epArrowRight />
                 </el-icon>
@@ -218,7 +287,7 @@ const submit = isStorage => {
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="进货价">
+            <el-form-item label="进货价" prop="goods_cost_price">
               <el-input class="pad-input" v-model="form.goods_cost_price" :formatter="priceFormatter"
                 @blur="priceBlur('goods_cost_price')" onfocus="this.select()" />
             </el-form-item>
@@ -226,13 +295,13 @@ const submit = isStorage => {
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="会员价">
+            <el-form-item label="会员价" prop="goods_vip_price">
               <el-input class="pad-input" v-model="form.goods_vip_price" :formatter="priceFormatter"
                 @blur="priceBlur('goods_vip_price')" onfocus="this.select()" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="库存数量">
+            <el-form-item label="库存数量" prop="stock_num">
               <el-input class="pad-input" v-model="form.stock_num" :formatter="numFormatter" @blur="numBlur"
                 onfocus="this.select()" />
             </el-form-item>
@@ -240,13 +309,13 @@ const submit = isStorage => {
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="生产日期">
+            <el-form-item label="生产日期" prop="goods_production_date">
               <el-date-picker v-model="form.goods_production_date" type="date" placeholder="请选择生产日期"
                 style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="保质期(天)">
+            <el-form-item label="保质期(天)" prop="goods_expiration_day">
               <el-input class="pad-input" v-model="form.goods_expiration_day"
                 :formatter="value => (value = value.replace(/\D/g, ''), value = value >= 10000 ? '9999' : value)"
                 onfocus="this.select()" />
@@ -254,7 +323,7 @@ const submit = isStorage => {
           </el-col>
         </el-row>
         <div style="display: flex;">
-          <el-form-item label="上传图片" style="margin-bottom: 0;">
+          <el-form-item label="上传图片" prop="image_id" style="margin-bottom: 0;">
             <el-upload ref="uploadRef" class="upload-photo" v-model:file-list="fileList" list-type="picture-card" drag
               :http-request="upload" :accept="accept.join()" :limit="1" :on-exceed="handleExceed"
               :before-upload="beforeAvatarUpload" :on-preview="handlePictureCardPreview">
@@ -278,15 +347,18 @@ const submit = isStorage => {
       </el-form>
     </el-scrollbar>
     <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="$emit('done')">取消</el-button>
-        <el-button @click="submit(true)">
-          保存并新增
-        </el-button>
-        <el-button type="primary" @click="submit(false)">
-          立即新增
-        </el-button>
-      </span>
+      <div v-show="!isRow">
+        <el-button @click="close">取消</el-button>
+        <el-button @click="submit(false)">新增并继续</el-button>
+        <el-button type="primary" @click="submit(true)">立即新增</el-button>
+      </div>
+      <div class="footer-flex" v-show="isRow">
+        <el-button type="danger" @click="remove">删除</el-button>
+        <span>
+          <el-button @click="close">取消</el-button>
+          <el-button type="primary" @click="submit(1, 1)">保存</el-button>
+        </span>
+      </div>
     </template>
   </el-dialog>
 </template>
@@ -347,6 +419,13 @@ const submit = isStorage => {
 
 .ps span+span {
   margin-top: 5px;
+}
+
+.footer-flex {
+  padding-left: 20px;
+  padding-right: 20px;
+  display: flex;
+  justify-content: space-between;
 }
 </style>
 <style>

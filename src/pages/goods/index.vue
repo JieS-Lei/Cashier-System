@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router'
 import { apis } from '~/apis'
 import { debounce } from '~/utils'
-import { useGoodsTypeStore } from '~/store/modules/goodsTypeStore'
+import { useGoodsStore } from '~/store/modules/goodsStore'
 
 // 组件
 import addGoodsVue from '../../components/addGoods.vue';
@@ -13,7 +13,7 @@ import delGoodsToTypeVue from '../../components/delGoodsToType.vue';
 
 const router = useRouter()
 
-const goodsTypeStore = useGoodsTypeStore()
+const goodsStore = useGoodsStore()
 
 const back = () => router.replace('/home')
 const escDown = event => event.key === 'Escape' && back()
@@ -110,7 +110,7 @@ const deleteChange = async type => {
                 instance.confirmButtonLoading = true
                 instance.confirmButtonText = '删除中'
                 let goodIds = multipleSelection.value.map(item => item.goods_id)
-                let [error, { code }] = await await apis.deleteGoodsById(goodIds.join())
+                let [error, { code }] = await apis.deleteGoodsById(goodIds.join())
                 instance.confirmButtonLoading = false
                 instance.confirmButtonText = '删除'
                 if (error || 1 !== code) return ElMessage('删除失败')
@@ -207,7 +207,8 @@ const searchFn = () => getGoodsList()
 
 // 表中单行数据被点击
 const rowClick = row => {
-    console.log(row);
+    goodsStore.rowForm = row
+    addGoodsVisible.value = true
 }
 
 // 替换空数据
@@ -226,10 +227,21 @@ const childTypeClick = event => {
 const activeName = ref('')
 
 // 设置分类
+let isSetType = false
 const setTypeFn = () => {
     if (!multipleSelection.value.length) return ElMessage.warning({ message: '您未选择任何商品', showClose: true, grouping: true })
-    console.log(multipleSelection.value[0]);
+    isSetType = true
+    reviseTypeVisible.value = true
 }
+// 监听选中
+watch(() => goodsStore.checkedType, newVal => {
+    if (!isSetType) return
+    if (newVal.id) {
+        //...
+        goodsStore.clearChecked() // 清空选中的type
+    }
+    isSetType = false
+})
 
 // 设置分类对话框显隐
 const reviseTypeVisible = ref(false)
@@ -250,7 +262,6 @@ watch(checkedType, () => {
     }
     if (!currentPage.value - 1) getGoodsList()
     else currentPage.value = 1
-
 })
 
 // 处理商品类型数据
@@ -280,35 +291,30 @@ const getTypeList = async () => {
     let [error, { data, code }] = await apis.getTypes()
     if (error || 1 !== code) return loading.value = false
     if (null != data && 'object' === typeof data) typeList.value = handleObj(data, 1)
-    goodsTypeStore.setList(typeList.value) //pinia
+    goodsStore.setTypeList(typeList.value) //pinia
     typeLoading.value = false
 }
 getTypeList()
 
-// 是否通过新增商品打开的分类列表
-let isAddGoodsVueOpenType = false
-// 关闭分类
-const itemType = ref({})
-const reviseTypeDone = typeObj => {
-    reviseTypeVisible.value = false
-    if (isAddGoodsVueOpenType) {
-        itemType.value = typeObj ?? (itemType.value.id ? itemType.value : {})
-        isAddGoodsVueOpenType = false
-    }
-}
-
 // 单位管理对话框显隐
 const setUnitVisible = ref(false)
-const unitItem = ref({})
-const setUnitInitId = ref(-1)
-
-// 新增商品完成
-const addGoodsEnd = () => {
-    addGoodsVisible.value = false
-    itemType.value = {} // 初始化分类
-    if (unitItem.value.unit_id) unitItem.value = {} // 初始化单位
-    getGoodsList() // 刷新数据
+let isSetUnit = false
+const setUnitFn = () => {
+    if (!multipleSelection.value.length) return ElMessage.warning({ message: '您未选择任何商品', showClose: true, grouping: true })
+    isSetUnit = true
+    setUnitVisible.value = true
 }
+// 监听选中
+watch(goodsStore.checkedUnit, newVal => {
+    if (!isSetType) return
+    console.log(newVal);
+    if (newVal.unit_id) {
+        //...
+        goodsStore.clearChecked() // 清空选中的unit
+    }
+    isSetUnit = false
+})
+
 </script>
 <template>
     <el-scrollbar>
@@ -370,7 +376,7 @@ const addGoodsEnd = () => {
                     <el-button class="radius" plain size="large" disabled>打印条码</el-button>
                     <el-button class="radius" plain size="large" disabled>打印标价签</el-button>
                     <el-button class="radius" plain size="large" @click="setTypeFn">设置分类</el-button>
-                    <el-button class="radius" plain size="large">设置单价</el-button>
+                    <el-button class="radius" plain size="large" @click="setUnitFn">设置单位</el-button>
                     <el-button class="radius" plain size="large">批量改价</el-button>
                     <el-button class="radius" plain size="large" disabled>设置库存上/下限</el-button>
                     <el-select v-model="sort" class="sort" placeholder="排序方式" size="large" @change="sortChange">
@@ -391,7 +397,7 @@ const addGoodsEnd = () => {
                             <el-table-column prop="goods_sku.goods_vip_price" label="会员价" align="center" />
                             <el-table-column prop="goods_sku.goods_cost_price" label="进价" align="center" />
                             <el-table-column prop="goods_sku.stock_num" label="库存" width="100" align="center" />
-                            <el-table-column prop="goods_sku.goods_unit" label="单位" width="100" align="center"
+                            <el-table-column prop="goods_sku.goods_unit_name" label="单位" width="100" align="center"
                                 :formatter="replace" />
                         </el-table>
                         <el-pagination class="pagination" v-model:current-page="currentPage" :total="page.total"
@@ -433,13 +439,12 @@ const addGoodsEnd = () => {
         </el-container>
     </el-scrollbar>
     <!-- 新增商品 -->
-    <addGoodsVue :show="addGoodsVisible" :unitItem="unitItem" :itemType="itemType" @done="addGoodsVisible = false"
-        @typeClick="isAddGoodsVueOpenType = reviseTypeVisible = true" @unitClick="setUnitVisible = true"
-        @addEnd="addGoodsEnd" />
+    <addGoodsVue :show="addGoodsVisible" @done="addGoodsVisible = false" @typeClick="reviseTypeVisible = true"
+        @unitClick="setUnitVisible = true" @addEnd="getGoodsList" />
     <!-- 修改分类 -->
-    <reviseTypeVue :show="reviseTypeVisible" @updataList="getTypeList" @done="reviseTypeDone" />
+    <reviseTypeVue :show="reviseTypeVisible" @updataList="getTypeList" @done="reviseTypeVisible = false" />
     <!-- 单位管理 -->
-    <setUnitVue :show="setUnitVisible" @checked="row => unitItem = row" @done="setUnitVisible = false" />
+    <setUnitVue v-if="setUnitVisible" :show="setUnitVisible" @done="setUnitVisible = false" />
     <!-- 按分类删除商品 -->
     <delGoodsToTypeVue v-if="delGoodsToTypeVisible" :show="delGoodsToTypeVisible" @done="delGoodsToTypeVisible = false"
         @delGoods="getGoodsList" @delType="getTypeList" />

@@ -1,8 +1,7 @@
 <script setup>
-import { useGoodsTypeStore } from '~/store/modules/goodsTypeStore'
+import { useGoodsStore } from '~/store/modules/goodsStore'
 import { storeToRefs } from 'pinia'
 import { apis } from '~/apis';
-import { ElMessage } from 'element-plus';
 
 const emit = defineEmits(['done', 'delGoods', 'delType'])
 const props = defineProps({
@@ -12,7 +11,7 @@ const props = defineProps({
     }
 })
 
-const store = useGoodsTypeStore()
+const store = useGoodsStore()
 const { typeList } = storeToRefs(store) // 分类列表
 
 const treeRef = ref() // 树节点
@@ -37,11 +36,11 @@ const checkedVal = ref(false)
 const loading = ref(false)
 const submit = async () => {
     let keys = treeRef.value.getCheckedNodes()
-    if (!keys) ElMessage.warning({ message: '初始化未完成，请稍后重试', grouping: true })
-    if (!keys.length) ElMessage.warning({ message: '未选择分类', grouping: true })
+    if (!keys) return ElMessage.warning({ message: '初始化未完成，请稍后重试', grouping: true })
+    if (!keys.length) return ElMessage.warning({ message: '未选择分类', grouping: true })
     let tempkey, checkedKeys = []
-    loading.value = true
-    keys.map(item => {
+    // loading.value = true
+    keys.forEach(item => {
         if ('level1' === item.text) {
             tempkey = item.id
             checkedKeys.push(tempkey)
@@ -76,7 +75,8 @@ const submit = async () => {
                 <span>显示符合匹配条件的分类下的全部子分类：</span>
                 <el-switch v-model="switchVal" size="small" @change="treeRef.filter(filterText)" />
             </div>
-            <el-tree ref="treeRef" :data="typeList" show-checkbox node-key="id" :filter-node-method="filterNode" />
+            <el-tree ref="treeRef" :data="typeList" check-strictly show-checkbox node-key="id"
+                :filter-node-method="filterNode" />
         </el-scrollbar>
         <template #footer>
             <span><el-checkbox v-model="checkedVal" label="同时删除分类" /></span>

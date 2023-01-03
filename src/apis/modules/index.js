@@ -33,6 +33,8 @@ export const goodsApi = {
     deleteGoodsById: goodsIds => Post('cashier/delGoods', { goodsId: goodsIds }),
     // 分类ID批量删除商品
     deleteGoodsByTypeId: typeIds => Post('cashier/delGoodsByCatId', { category_id: typeIds }),
+    // 修改商品信息
+    updataGoods: data => Post('cashier/editGoods', data),
 };
 
 // 文件上传

@@ -1,5 +1,7 @@
 <script setup>
 import { apis } from '~/apis'
+import { useGoodsStore } from '~/store/modules/goodsStore'
+import { storeToRefs } from 'pinia'
 
 const emit = defineEmits(['done', 'checked'])
 const props = defineProps({
@@ -8,21 +10,31 @@ const props = defineProps({
         required: true
     }
 })
+const store = useGoodsStore()
+const { unitList, checkedUnit } = storeToRefs(store) // 单位列表
 
 const list = ref([]) // 数据
 const loading = ref(true)
 const checkedId = ref(-1) // 选中的id
 
-apis.getGoodsUnit().then(([error, { data, code }]) => {
+if (unitList.value.length) {
+    list.value = unitList.value
+    loading.value = false
+    checkedId.value = Number(checkedUnit.value.unit_id) || -1
+} else apis.getGoodsUnit().then(([error, { data, code }]) => {
     loading.value = false
     if (error || 1 !== code) return false
-    if (Array.isArray(data.list)) list.value = data.list
-
+    if (Array.isArray(data.list)) list.value = unitList.value = data.list
+    checkedId.value = Number(checkedUnit.value.unit_id) || -1
 })
 
 // 是否编辑状态
 const isEdit = ref(false)
-const handleCurrentChange = row => checkedId.value = row.unit_id
+const handleCurrentChange = row => {
+    if (isEdit.value) return
+    checkedId.value = row.unit_id
+    checkedUnit.value = row
+}
 
 // 删除单位
 const handleDelete = (index, row) => {
@@ -89,6 +101,7 @@ const addUnit = () => {
 
 // 点击单元格提交
 const submit = row => {
+    if (isEdit.value) return
     emit('checked', row)
     emit('done')
 }
@@ -97,7 +110,7 @@ const submit = row => {
     <el-dialog :model-value="props.show" width="525px" title="单位管理" align-center :close-on-click-modal="false"
         :before-close="() => emit('done')">
         <el-table class="table" v-loading="loading" ref="singleTableRef" size="large" max-height="370px" :data="list"
-            :show-header="false" highlight-current-row @current-change="handleCurrentChange" @row-click="submit">
+            :show-header="false" @current-change="handleCurrentChange" @row-click="submit">
             <el-table-column property="name" label="Name" />
             <el-table-column align="right" width="53px" center>
                 <template #default="scope">
