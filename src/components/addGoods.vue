@@ -3,9 +3,9 @@ import { apis } from '~/apis'
 import { genFileId } from 'element-plus'
 import { useGoodsStore } from '~/store/modules/goodsStore'
 import { storeToRefs } from 'pinia'
-import { watch } from 'vue';
+import { priceChangeFormatter as priceFormatter, priceBlurFormatter } from '~/utils'
 
-const emit = defineEmits(['done', 'typeClick', 'unitClick', 'addEnd'])
+const emit = defineEmits(['done', 'typeClick', 'unitClick', 'updata'])
 const props = defineProps({
   show: {
     type: Boolean,
@@ -42,6 +42,7 @@ watch(checkedType, () => {
   })
 })
 
+// 是否单行数据点击打开
 const isRow = ref(!!rowForm.value.goods_id)
 watch(rowForm, newVal => {
   isRow.value = !!newVal.goods_id
@@ -56,7 +57,8 @@ watch(rowForm, newVal => {
   form.goods_expiration_day = rowForm.value.goods_sku.goods_expiration_day
   let unitId = rowForm.value.goods_sku.goods_unit,
     typeObj = rowForm.value.category ?? {},
-    date = rowForm.value.goods_sku.goods_production_date
+    date = rowForm.value.goods_sku.goods_production_date,
+    imageObj = rowForm.value.image[0]
   if (date) {
     form.goods_production_date = new Date(date * 1000)
   }
@@ -70,32 +72,23 @@ watch(rowForm, newVal => {
       name: rowForm.value.goods_sku.goods_unit_name
     }
   }
+  if (imageObj && imageObj.image_id) {
+    form.image_id = imageObj.image_id
+    fileList.value.push({
+      name: imageObj.file_name,
+      url: imageObj.file_path
+    })
+  }
 })
+
+// blur时完善输入的金额
+const priceBlur = key => form[key] = priceBlurFormatter(form[key])
 
 const rules = reactive({
   goods_name: { required: true, message: '请填写商品名单', trigger: 'blur' },
   goods_price: { required: true, message: '请输入价格', trigger: 'blur' },
   category_id: { required: true, message: '请选择分类' }
 })
-
-// 金额输入框格式化函数
-const priceFormatter = value => {
-  // 删除不合规的字符
-  value = value.replace(/[^\d\.]|(?<=^0)0|(?<=\.\d{2})(.*)|(?<=\.\d*)\./g, '')
-  // 点开头自动补0
-  value = value.replace(/^\./, '0.')
-  // value = value.length
-  if (1000000 <= +value) value = '999999.99'
-  return value
-}
-
-// blur时完善输入的金额
-const priceBlur = key => {
-  if (!form[key]) return form[key] = '0.00'
-  form[key] = form[key].replace(/^0(?=[0-9])/, '')
-  if (!form[key].includes('.')) form[key] += '.00'
-  else form[key] += "0".repeat(Math.max(2 - form[key].split('.')[1]?.length, 0))
-}
 
 // 库存输入框格式化函数
 const numFormatter = value => {
@@ -150,6 +143,11 @@ const handleExceed = files => {
   uploadRef.value.submit()
 }
 
+const handleRemove = (uploadFile, uploadFiles) => {
+  form.image_id = ''
+  console.log(uploadFile, uploadFiles)
+}
+
 // 查看大图
 const handlePictureCardPreview = file => {
   dialogImageUrl.value = file.url
@@ -170,7 +168,7 @@ const upload = options => new Promise((resolve, reject) => {
       return reject(e)
     }
     resolve(res)
-    form.image_id = res.data.image_id
+    form.image_id = res.data.file_id
   })
 })
 
@@ -180,8 +178,11 @@ const submit = (isClose, isUpdata) => {
   formRef.value.validate().then(async isValid => {
     if (!isValid) return console.warn('表单验证失败')
     let options = { ...form }
+    // 处理日期
     if (form.goods_production_date) options.goods_production_date = form.goods_production_date.getTime() / 1000
+    // 修改商品传入id
     if (isUpdata) options['goods_id'] = rowForm.value.goods_id
+    console.log(options);
     let [error, { code }] = await apis[isUpdata ? 'updataGoods' : 'addGoods'](options)
     if (error || 1 !== code) return ElMessage(`商品${isUpdata ? '修改' : '新增'}失败`)
     ElMessage.success(`商品${isUpdata ? '修改' : '新增'}成功`)
@@ -190,23 +191,29 @@ const submit = (isClose, isUpdata) => {
       checkedType.value = {} // 清空选中分类
       formRef.value.resetFields()
     }
-    emit('addEnd')
-    if (isClose) emit('done')
+    emit('updata')
+    if (isClose) close()
+    else clearFrom()
   }).catch(err => {
     console.warn('error', err)
   })
 }
 
-// 关闭对话框
-const close = () => {
-  emit('done')
-  rowForm.value = {}
+// 清空表单数据
+const clearFrom = () => {
   checkedUnit.value = {} // 清空选中单位
   checkedType.value = {} // 清空选中分类
+  fileList.value = [] // 图片清空
   formRef.value.resetFields()
   for (const key in defaultFrom) {
     if (Object.hasOwnProperty.call(defaultFrom, key)) form[key] = defaultFrom[key]
   }
+}
+// 关闭对话框
+const close = () => {
+  emit('done')
+  rowForm.value = {}
+  clearFrom() // 清除选中数据
 }
 
 // 修改商品信息
@@ -227,7 +234,7 @@ const remove = () => {
       if (error || 1 !== code) return ElMessage('删除失败')
       done()
       close()
-      emit('addEnd')
+      emit('updata')
     }
   })
     .then(() => ElMessage.success('删除成功'))
@@ -326,7 +333,7 @@ const remove = () => {
           <el-form-item label="上传图片" prop="image_id" style="margin-bottom: 0;">
             <el-upload ref="uploadRef" class="upload-photo" v-model:file-list="fileList" list-type="picture-card" drag
               :http-request="upload" :accept="accept.join()" :limit="1" :on-exceed="handleExceed"
-              :before-upload="beforeAvatarUpload" :on-preview="handlePictureCardPreview">
+              :on-remove="handleRemove" :before-upload="beforeAvatarUpload" :on-preview="handlePictureCardPreview">
               <el-icon class="el-icon--upload">
                 <ep-upload-filled />
               </el-icon>

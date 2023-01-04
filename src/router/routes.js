@@ -17,6 +17,13 @@ const routes = [
             admin: true
         }
     }, {
+        path: '/vip',
+        name: 'vip',
+        component: () => import('~/pages/vip/index.vue'),
+        meta: {
+            admin: true
+        }
+    }, {
         path: '/login',
         name: 'login',
         component: () => import('~/pages/login/index.vue'),

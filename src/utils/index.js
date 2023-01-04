@@ -69,3 +69,23 @@ export const throttle = function throttle(func, wait) {
         return result
     }
 }
+
+// 金额输入框格式化函数
+export const priceChangeFormatter = value => {
+    // 删除不合规的字符
+    value = value.replace(/[^\d\.]|(?<=^0)0|(?<=\.\d{2})(.*)|(?<=\.\d*)\./g, '')
+    // 点开头自动补0
+    value = value.replace(/^\./, '0.')
+    // value = value.length
+    if (1000000 <= +value) value = '999999.99'
+    return value
+}
+
+// blur时完善输入的金额
+export const priceBlurFormatter = value => {
+    if (!value) return value = '0.00'
+    value = value.replace(/^0(?=[0-9])/, '')
+    if (!value.includes('.')) value += '.00'
+    else value += "0".repeat(Math.max(2 - value.split('.')[1]?.length, 0))
+    return value
+}

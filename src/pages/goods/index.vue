@@ -1,15 +1,15 @@
 <script setup>
-import { ref } from 'vue';
 import { useRouter } from 'vue-router'
 import { apis } from '~/apis'
-import { debounce } from '~/utils'
 import { useGoodsStore } from '~/store/modules/goodsStore'
+import { debounce, priceChangeFormatter as priceFormatter, priceBlurFormatter } from '~/utils'
 
 // 组件
 import addGoodsVue from '../../components/addGoods.vue';
 import reviseTypeVue from '../../components/reviseType.vue';
 import setUnitVue from '../../components/setUnit.vue';
 import delGoodsToTypeVue from '../../components/delGoodsToType.vue';
+import { ElMessage } from 'element-plus';
 
 const router = useRouter()
 
@@ -107,14 +107,21 @@ const deleteChange = async type => {
             draggable: true,
             beforeClose: async (action, instance, done) => {
                 if (action !== 'confirm') return done()
+                let goodIds = multipleSelection.value.map(item => item.goods_id)
+                if (!goodIds.length) {
+                    ElMessage('未选中商品')
+                    instance.action = 'close'
+                    return done()
+                }
                 instance.confirmButtonLoading = true
                 instance.confirmButtonText = '删除中'
-                let goodIds = multipleSelection.value.map(item => item.goods_id)
                 let [error, { code }] = await apis.deleteGoodsById(goodIds.join())
                 instance.confirmButtonLoading = false
                 instance.confirmButtonText = '删除'
-                if (error || 1 !== code) return ElMessage('删除失败')
-                getGoodsList()
+                if (error || 1 !== code) {
+                    ElMessage('删除失败')
+                    instance.action = 'close'
+                } else getGoodsList()
                 done()
             }
         })
@@ -143,8 +150,11 @@ const loading = ref(false)
 watch(currentPage, () => getGoodsList())
 
 // 获取表格数据方法
-const getGoodsList = async params => {
+const getGoodsList = async () => {
     loading.value = true
+    if (reviseTypeVisible.value) reviseTypeVisible.value = false
+    if (setUnitVisible.value) setUnitVisible.value = false
+    if (dialogPriceVisible.value) dialogPriceVisible.value = false
     let options = {
         page: currentPage.value,
         listRows: page.pageSize,
@@ -234,11 +244,17 @@ const setTypeFn = () => {
     reviseTypeVisible.value = true
 }
 // 监听选中
-watch(() => goodsStore.checkedType, newVal => {
+watch(() => goodsStore.checkedType, async newVal => {
     if (!isSetType) return
     if (newVal.id) {
-        //...
-        goodsStore.clearChecked() // 清空选中的type
+        let [error, { code }] = await apis.batchReviseGoodsInfo({
+            category_id: newVal.id,
+            goodsId: multipleSelection.value.map(item => item.goods_id).join()
+        })
+        if (error || 1 !== code) return ElMessage('修改失败')
+        ElMessage.success('修改成功')
+        goodsStore.clearChecked('Type') // 清空选中的type
+        getGoodsList()
     }
     isSetType = false
 })
@@ -305,15 +321,75 @@ const setUnitFn = () => {
     setUnitVisible.value = true
 }
 // 监听选中
-watch(goodsStore.checkedUnit, newVal => {
-    if (!isSetType) return
-    console.log(newVal);
+watch(() => goodsStore.checkedUnit, async newVal => {
+    if (!isSetUnit) return
     if (newVal.unit_id) {
-        //...
-        goodsStore.clearChecked() // 清空选中的unit
+        let [error, { code }] = await apis.batchReviseGoodsInfo({
+            goods_unit: newVal.unit_id,
+            goodsId: multipleSelection.value.map(item => item.goods_id).join()
+        })
+        if (error || 1 !== code) return ElMessage('修改失败')
+        ElMessage.success('修改成功')
+        goodsStore.clearChecked('Unit') // 清空选中的unit
+        getGoodsList()
     }
-    isSetUnit = false
+    isSetType = false
 })
+
+// 批量价格修改
+const priceFormEl = ref()
+const dialogPriceVisible = ref(false)
+const priceForm = reactive({
+    type: '',
+    mode: '',
+    money: ''
+})
+const priceRules = reactive({
+    type: [{ required: true, message: '请选择价格类型', trigger: 'change' }],
+    mode: [{ required: true, message: '请选择调价方式', trigger: 'change' }],
+    money: [{ required: true, message: '请输入修改金额', trigger: 'blur' }]
+})
+const describePriceMode = computed(() => {
+    switch (priceForm.mode) {
+        case '2': return '原价格加固定金额'
+        case '3': return '原价格减固定金额'
+        case '4': return '原价格上浮固定百分比'
+        case '5': return '原价格下浮固定百分比'
+        default: return ''
+    }
+})
+const setPriceFn = () => {
+    if (!multipleSelection.value.length) return ElMessage.warning({ message: '您未选择任何商品', showClose: true, grouping: true })
+    dialogPriceVisible.value = true
+}
+const updataPriceFn = async (priceFormEl) => {
+    if (!priceFormEl) return
+    await priceFormEl.validate(async (valid, fields) => {
+        if (valid) {
+            if (priceForm.mode == 4 || priceForm.mode == 5) priceForm.money /= 100
+            let options = {
+                price_type: priceForm.mode,
+                [priceForm.type]: priceForm.money,
+                goodsId: multipleSelection.value.map(item => item.goods_id).join()
+            }
+            let [error, { code }] = await apis.batchReviseGoodsInfo(options)
+            if (error || 1 !== code) return ElMessage('修改失败')
+            ElMessage.success('修改成功')
+            dialogPriceVisible.value = false
+            priceFormEl.resetFields()
+            getGoodsList()
+        } else console.warn('error submit!', fields)
+    })
+}
+
+const autoBCardLoading = ref(false)
+const autoBCardFn = async () => {
+    autoBCardLoading.value = true
+    let [error, { code }] = await apis.autoCreateBarCode()
+    if (error || 1 != code) return ElMessage('条码创建失败')
+    getGoodsList()
+    autoBCardLoading.value = false
+}
 
 </script>
 <template>
@@ -361,7 +437,7 @@ watch(goodsStore.checkedUnit, newVal => {
                         </div>
                     </div>
                     <div class="right">
-                        <el-button class="addBtn radius" plain size="large">导入商品</el-button>
+                        <el-button class="addBtn radius" plain size="large" disabled>导入商品</el-button>
                         <el-button class="addBtn radius" type="primary" size="large" @click="addGoodsVisible = true">
                             新增商品 </el-button>
                     </div>
@@ -372,12 +448,13 @@ watch(goodsStore.checkedUnit, newVal => {
                         <el-option label="删除已选商品" value="deleteChecked" />
                         <el-option label="按分类删除商品" value="typeDelete" />
                     </el-select>
-                    <el-button class="radius" plain size="large">自动生成条码</el-button>
+                    <el-button class="radius" plain size="large" :loading="autoBCardLoading"
+                        @click="autoBCardFn">自动生成条码</el-button>
                     <el-button class="radius" plain size="large" disabled>打印条码</el-button>
                     <el-button class="radius" plain size="large" disabled>打印标价签</el-button>
                     <el-button class="radius" plain size="large" @click="setTypeFn">设置分类</el-button>
                     <el-button class="radius" plain size="large" @click="setUnitFn">设置单位</el-button>
-                    <el-button class="radius" plain size="large">批量改价</el-button>
+                    <el-button class="radius" plain size="large" @click="setPriceFn">批量改价</el-button>
                     <el-button class="radius" plain size="large" disabled>设置库存上/下限</el-button>
                     <el-select v-model="sort" class="sort" placeholder="排序方式" size="large" @change="sortChange">
                         <el-option label="最新创建" value="timeDesc" aria-checked />
@@ -438,9 +515,45 @@ watch(goodsStore.checkedUnit, newVal => {
             </el-main>
         </el-container>
     </el-scrollbar>
+    <!-- 批量修改价格 -->
+    <el-dialog class="re-price" v-model="dialogPriceVisible" title="批量修改价格" width="400" draggable
+        @close="priceFormEl?.resetFields()">
+        <el-form ref="priceFormEl" :model="priceForm" :rules="priceRules">
+            <el-form-item label="价格类型" label-width="80" prop="type">
+                <el-select v-model="priceForm.type" placeholder="请选择价格类型" style="width:100%;">
+                    <el-option label=" 售价" value="goods_price" />
+                    <el-option label="会员价" value="goods_vip_price" />
+                    <el-option label="进价" value="goods_cost_price" />
+                </el-select>
+            </el-form-item>
+            <el-form-item label="调价方式" label-width="80" prop="mode">
+                <el-select v-model="priceForm.mode" placeholder="请选择调价方式" style="width:100%;">
+                    <el-option label="直接设定" value="1" />
+                    <el-option label="加价" value="2" />
+                    <el-option label="减价" value="3" />
+                    <el-option label="原价上浮" value="4" />
+                    <el-option label="原价下浮" value="5" />
+                </el-select>
+            </el-form-item>
+            <el-form-item label="价格" label-width="80" prop="money">
+                <el-input v-model="priceForm.money" autocomplete="off" :formatter="priceFormatter"
+                    @blur="priceForm.money = priceBlurFormatter(priceForm.money)" onfocus="this.select()">
+                    <template #prefix><span v-show="priceForm.mode <= 3">￥</span></template>
+                    <template #suffix><span v-show="priceForm.mode > 3">%</span></template>
+                </el-input>
+            </el-form-item>
+        </el-form>
+        <div class="describe">{{ describePriceMode }}</div>
+        <template #footer>
+            <div class="dialog-footer">
+                <el-button type="primary" size="large" @click="updataPriceFn(priceFormEl)"
+                    style="width:100%;">确定</el-button>
+            </div>
+        </template>
+    </el-dialog>
     <!-- 新增商品 -->
     <addGoodsVue :show="addGoodsVisible" @done="addGoodsVisible = false" @typeClick="reviseTypeVisible = true"
-        @unitClick="setUnitVisible = true" @addEnd="getGoodsList" />
+        @unitClick="setUnitVisible = true" @updata="getGoodsList" />
     <!-- 修改分类 -->
     <reviseTypeVue :show="reviseTypeVisible" @updataList="getTypeList" @done="reviseTypeVisible = false" />
     <!-- 单位管理 -->
@@ -448,6 +561,7 @@ watch(goodsStore.checkedUnit, newVal => {
     <!-- 按分类删除商品 -->
     <delGoodsToTypeVue v-if="delGoodsToTypeVisible" :show="delGoodsToTypeVisible" @done="delGoodsToTypeVisible = false"
         @delGoods="getGoodsList" @delType="getTypeList" />
+
 </template>
 <style scoped>
 .container {
@@ -716,5 +830,21 @@ watch(goodsStore.checkedUnit, newVal => {
 .sel-checkbox .el-checkbox {
     flex: 1;
     padding: 0 32px 0 20px
+}
+
+.re-price .el-dialog__body {
+    padding: 10px 30px 0;
+}
+
+.re-price .el-dialog__footer .dialog-footer {
+    padding: 0 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.re-price .describe {
+    height: 20px;
+    line-height: 20px;
+    text-align: right;
 }
 </style>

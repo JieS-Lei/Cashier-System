@@ -35,6 +35,10 @@ export const goodsApi = {
     deleteGoodsByTypeId: typeIds => Post('cashier/delGoodsByCatId', { category_id: typeIds }),
     // 修改商品信息
     updataGoods: data => Post('cashier/editGoods', data),
+    // 批量修改商品分类|单位|金额
+    batchReviseGoodsInfo: data => Post('cashier/batchEditGoods', data),
+    // 所有商品自动生成条码
+    autoCreateBarCode: () => Post('cashier/autoGenOrderNo'),
 };
 
 // 文件上传

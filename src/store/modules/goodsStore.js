@@ -17,9 +17,8 @@ export const useGoodsStore = defineStore('goods', {
         setUtilList(list) {
             this.typeList = list
         },
-        clearChecked() {
-            this.checkedType = {}
-            this.checkedUnit = {}
+        clearChecked(name) {
+            this['checked' + name] = {}
         }
     }
 })
