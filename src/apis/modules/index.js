@@ -39,6 +39,8 @@ export const goodsApi = {
     batchReviseGoodsInfo: data => Post('cashier/batchEditGoods', data),
     // 所有商品自动生成条码
     autoCreateBarCode: () => Post('cashier/autoGenOrderNo'),
+    // 获取会员列表
+    getVips: data => Post('cashier/listUser', data),
 };
 
 // 文件上传
@@ -46,6 +48,7 @@ export const uploadApi = {
     upload: options => {
         let config = {}
         if ('function' === typeof options.onProgress) {
+            // 上传进度事件
             config['onUploadProgress'] = evt => {
                 const progressEvt = evt;
                 progressEvt.percent = evt.total > 0 ? evt.loaded / evt.total * 100 : 0;

@@ -1,0 +1,114 @@
+.container {
+    min-width: 1020px;
+    height: 100vh;
+    user-select: none;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    line-height: 1;
+}
+
+.header .box {
+    width: 130px;
+}
+
+.header .box:first-child>:first-child {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.title {
+    margin: 0 auto;
+    line-height: 1;
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    background-color: var(--el-bg-color-page);
+}
+
+.main .top {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    height: 50px;
+    font-size: var(--el-font-size-medium);
+    color: var(--el-text-color-regular);
+}
+
+.main .top .left {
+    flex: 1;
+}
+
+.main .top .left>div+div {
+    margin-left: 10px;
+}
+
+.main .top .search {
+    min-width: 245px;
+    max-width: 300px;
+    width: 33%;
+    height: 100%;
+}
+
+.addBtn {
+    width: 110px;
+    height: 100%;
+}
+
+.addBtn:deep(span) {
+    font-size: var(--el-font-size-large);
+    font-weight: bolder;
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    padding: 0 10px 10px;
+    overflow: auto;
+}
+
+.content .table {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.content .table .table-main {
+    flex: 1;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.content .table .pagination {
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    padding: 0 10px;
+    align-items: center;
+    background-color: var(--el-fill-color-blank);
+}
+
+.content .table .pagination:deep(>span) {
+    flex: 1;
+}
+
+/* 组件内input 大字体 */
+.large:deep(input) {
+    padding: 0 14px;
+    font-size: 15px;
+}
+
+/* 圆角 */
+.radius,
+:deep(.radius),
+.radius:deep(div) {
+    /* --top-border-radius: 50px; */
+    border-radius: 50px;
+}

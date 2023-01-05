@@ -26,38 +26,13 @@ onBeforeUnmount(() => {
     window.onresize = null
 })
 
-const checked1 = ref(false)
-const checked2 = ref(false)
 const checkeds = reactive({
+    checked1: false, // 1，3销售
+    checked2: false, // 2，4库存
     checked3: false,
     checked4: false
 })
-
-watch(checkeds, newValue => {
-    // 处理 checked3 和 checked4
-    if (newValue.checked3) {
-        // checkde3
-    }
-    if (newValue.checked4) {
-        // checked4
-    }
-
-})
-watch(checked1, newValue => {
-    if (newValue) {
-
-    } else {
-
-    }
-
-})
-watch(checked2, newValue => {
-    if (newValue) {
-
-    } else {
-
-    }
-})
+watch(checkeds, () => getGoodsList())
 
 // 新增商品对话框显隐
 const addGoodsVisible = ref(false)
@@ -146,7 +121,7 @@ const page = reactive({ // 分页参数
 })
 const loading = ref(false)
 
-// 单页数量改变 重新获取数据
+// 页数改变 重新获取数据
 watch(currentPage, () => getGoodsList())
 
 // 获取表格数据方法
@@ -161,6 +136,8 @@ const getGoodsList = async () => {
         search: search.value,
         category_id: typeId,
         sortType: sort.value,
+        show_sale: +checkeds.checked1 || checkeds.checked3 * 2 || 0, // 销售
+        show_stock: +checkeds.checked2 || checkeds.checked4 * 2 || 0 // 库存
     }
     // 时间
     if (Array.isArray(date.value)) {
@@ -170,7 +147,7 @@ const getGoodsList = async () => {
     // console.log(options);
     let [error, { data, code }] = await apis.getGoods(options)
     if (error || 1 !== code) return loading.value = false
-    page.total = +data.list.total
+    page.total = +data.list.total || 0
     tableData.value = data.list.data
     loading.value = false
 }
@@ -396,14 +373,16 @@ const autoBCardFn = async () => {
     <el-scrollbar>
         <el-container class="container" style="width: 100vw;">
             <el-header class="header">
-                <el-button class="esc" size="large" text @click="back">
-                    <el-icon size="20">
-                        <ep-arrowLeft-bold />
-                    </el-icon>
-                    返回 [ESC]
-                </el-button>
+                <div class="box">
+                    <el-button size="large" text @click="back">
+                        <el-icon>
+                            <epArrowLeftBold />
+                        </el-icon>
+                        返回 [ESC]
+                    </el-button>
+                </div>
                 <span class="title">商品管理</span>
-                <div></div>
+                <div class="box"></div>
             </el-header>
             <el-main class="main">
                 <div class="top">
@@ -412,21 +391,21 @@ const autoBCardFn = async () => {
                             @change="searchFn" />
                         <el-select class="select large radius" placeholder="显示设置">
                             <el-option class="sel-checkbox" value="">
-                                <el-checkbox v-model="checked1" :disabled="checkeds.checked3" label="隐藏未销售" size="large"
-                                    @click.stop />
+                                <el-checkbox v-model="checkeds.checked1" :disabled="checkeds.checked3" label="隐藏未销售"
+                                    size="large" @click.stop />
                             </el-option>
                             <el-option class="sel-checkbox" value="">
-                                <el-checkbox v-model="checked2" :disabled="checkeds.checked4" label="隐藏零库存" size="large"
-                                    @click.stop />
+                                <el-checkbox v-model="checkeds.checked2" :disabled="checkeds.checked4" label="隐藏零库存"
+                                    size="large" @click.stop />
                             </el-option>
                             <el-divider style="margin: 10px 20px; width: auto;"></el-divider>
                             <el-option class="sel-checkbox" value="">
-                                <el-checkbox v-model="checkeds.checked3" :disabled="checked1" label="显示未销售" size="large"
-                                    @click.stop />
+                                <el-checkbox v-model="checkeds.checked3" :disabled="checkeds.checked1" label="显示未销售"
+                                    size="large" @click.stop />
                             </el-option>
                             <el-option class="sel-checkbox" value="">
-                                <el-checkbox v-model="checkeds.checked4" :disabled="checked2" label="显示零库存" size="large"
-                                    @click.stop />
+                                <el-checkbox v-model="checkeds.checked4" :disabled="checkeds.checked2" label="显示零库存"
+                                    size="large" @click.stop />
                             </el-option>
                         </el-select>
                         <div class="selectDate">
@@ -438,8 +417,8 @@ const autoBCardFn = async () => {
                     </div>
                     <div class="right">
                         <el-button class="addBtn radius" plain size="large" disabled>导入商品</el-button>
-                        <el-button class="addBtn radius" type="primary" size="large" @click="addGoodsVisible = true">
-                            新增商品 </el-button>
+                        <el-button class="addBtn radius" type="primary" size="large"
+                            @click="addGoodsVisible = true">新增商品</el-button>
                     </div>
                 </div>
                 <div div class=" btns radius">
@@ -564,76 +543,21 @@ const autoBCardFn = async () => {
 
 </template>
 <style scoped>
-.container {
-    min-width: 1020px;
-    height: 100vh;
-    user-select: none;
-}
-
-.header {
-    /* display: flex;
-    align-items: center;
-    justify-content: space-between; */
-    position: relative;
-    padding: 0 10px;
-    text-align: center;
-    line-height: 60px;
-}
-
-.esc {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.title {
-    margin: 0 auto;
-    line-height: 1;
-}
-
-.main {
-    --top-border-radius: 50px;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    background-color: var(--el-bg-color-page);
-}
-
-.main .top {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    height: 50px;
-    font-size: var(--el-font-size-medium);
-    color: var(--el-text-color-regular);
-}
-
-.main .top .left {
-    flex: 1;
-}
-
-.main .top .left>div+div {
-    margin-left: 10px;
-}
-
-.main .top .search {
-    min-width: 245px;
-    max-width: 300px;
-    width: 33%;
-    height: 100%;
-}
+@import url(~/assets/style/common.css);
 
 .main .top .select {
-    min-width: 140px;
-    max-width: 150px;
-    width: 19%;
+    width: 130px;
     height: 100%;
 }
 
 .main .top .select:deep(div) {
     width: 100%;
     height: 100%;
+    box-sizing: border-box;
+}
+
+.main .top .select:deep(input) {
+    padding: 0 9px;
 }
 
 .main .select:deep(input::placeholder) {
@@ -664,15 +588,6 @@ const autoBCardFn = async () => {
     height: 100%;
 }
 
-.addBtn {
-    width: 110px;
-    height: 100%;
-}
-
-.addBtn:deep(span) {
-    font-size: var(--el-font-size-large);
-}
-
 .main .btns {
     display: flex;
     justify-content: space-between;
@@ -694,36 +609,10 @@ const autoBCardFn = async () => {
 
 .content {
     --type-width: 105px;
-    flex: 1;
-    display: flex;
-    /* align-items: flex-start; */
-    padding: 0 10px 10px;
-    overflow: auto;
 }
 
 .content .table {
-    display: flex;
-    flex-direction: column;
     width: calc(100% - var(--type-width));
-    height: 100%;
-}
-
-.content .table .table-main {
-    flex: 1;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-}
-
-.content .table .pagination {
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-    padding: 0 10px;
-    align-items: center;
-    background-color: var(--el-fill-color-blank);
-}
-
-.content .table .pagination:deep(>span) {
-    flex: 1;
 }
 
 .content .type-shell {
@@ -806,18 +695,6 @@ const autoBCardFn = async () => {
 
 .type .el-collapse:deep(.el-collapse-item__content .active) {
     background-color: rgb(155 204 255 / 50%) !important;
-}
-
-/* 组件内input 大字体 */
-.large:deep(input) {
-    padding: 0 20px;
-    font-size: var(--el-font-size-medium);
-}
-
-/* 圆角 */
-:deep(.radius),
-.radius:deep(div) {
-    border-radius: var(--top-border-radius);
 }
 </style>
 <style>
