@@ -12,19 +12,7 @@ import delGoodsToTypeVue from '../../components/delGoodsToType.vue';
 import { ElMessage } from 'element-plus';
 
 const router = useRouter()
-
 const goodsStore = useGoodsStore()
-
-const back = () => router.replace('/home')
-const escDown = event => event.key === 'Escape' && back()
-
-onMounted(() => {
-    document.documentElement.addEventListener('keyup', escDown)
-})
-onBeforeUnmount(() => {
-    document.documentElement.removeEventListener('keyup', escDown)
-    window.onresize = null
-})
 
 const checkeds = reactive({
     checked1: false, // 1，3销售
@@ -189,6 +177,7 @@ onMounted(async () => {
     }, 1000)
     getGoodsList()
 })
+onBeforeUnmount(() => window.onresize = null)
 
 const searchFn = () => getGoodsList()
 
@@ -374,7 +363,7 @@ const autoBCardFn = async () => {
         <el-container class="container" style="width: 100vw;">
             <el-header class="header">
                 <div class="box">
-                    <el-button size="large" text @click="back">
+                    <el-button size="large" text @click="router.back()">
                         <el-icon>
                             <epArrowLeftBold />
                         </el-icon>
@@ -384,7 +373,7 @@ const autoBCardFn = async () => {
                 <span class="title">商品管理</span>
                 <div class="box"></div>
             </el-header>
-            <el-main class="main">
+            <el-main class="main pageBgColor">
                 <div class="top">
                     <div class="left">
                         <el-input v-model="search" class="large search radius" placeholder="商品名称/条码/首字母/扫码" clearable

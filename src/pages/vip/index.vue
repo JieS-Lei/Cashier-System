@@ -2,19 +2,10 @@
 import { useRouter } from 'vue-router'
 import { apis } from '~/apis'
 import { debounce } from '~/utils'
+import { useVipStore } from '~/store/modules/vipStore'
 
 const router = useRouter()
-
-const back = () => router.replace('/home')
-const escDown = event => event.key === 'Escape' && back()
-
-onMounted(() => {
-    document.documentElement.addEventListener('keyup', escDown)
-})
-onBeforeUnmount(() => {
-    document.documentElement.removeEventListener('keyup', escDown)
-    window.onresize = null
-})
+const store = useVipStore()
 
 const search = ref('') // 搜索内容
 const searchFn = () => console.log(search.value)
@@ -41,7 +32,6 @@ const statusOption = [{
     label: '未激活',
 }]
 const statusVal = ref('1')
-
 
 const loading = ref(false) // 列表加载
 const multipleTableRef = ref() // 表格实例
@@ -91,6 +81,7 @@ onMounted(async () => {
     }, 1000)
     getVipList()
 })
+onBeforeUnmount(() => window.onresize = null)
 /* End - 动态计算列表数据容量，设置pageSize */
 
 // 获取列表数据 
@@ -123,7 +114,7 @@ const rowClick = (row) => console.log(row)
         <el-container class="container" style="width: 100vw;">
             <el-header class="header">
                 <div class="box">
-                    <el-button size="large" text @click="back">
+                    <el-button size="large" text @click="router.back()">
                         <el-icon>
                             <epArrowLeftBold />
                         </el-icon>
@@ -132,10 +123,11 @@ const rowClick = (row) => console.log(row)
                 </div>
                 <span class="title">会员管理</span>
                 <div class="box herder-right">
-                    <el-button class="radius" plain size="large">会员设置</el-button>
+                    <el-button class="radius" plain size="large"
+                        @click="router.push({ name: 'vipSetting' })">会员设置</el-button>
                 </div>
             </el-header>
-            <el-main class="main">
+            <el-main class="main pageBgColor">
                 <div class="top">
                     <div class="left">
                         <el-input v-model="search" class="large search radius" placeholder="请输入姓名/手机号/刷卡" clearable
@@ -149,13 +141,12 @@ const rowClick = (row) => console.log(row)
                                 :value="item.value" />
                         </el-select>
                         <div class="discount">
-                            <el-button class="radius discount-btn" plain size="large">批量修改折扣</el-button>
+                            <el-button class="radius discount-btn" plain size="large" disabled>批量修改折扣</el-button>
                         </div>
                     </div>
                     <div class="right">
                         <el-button class="addBtn radius" plain size="large" disabled>批量导入</el-button>
-                        <el-button class="addBtn radius" type="primary" size="large"
-                            @click="addGoodsVisible = true">新增会员</el-button>
+                        <el-button class="addBtn radius" type="primary" size="large" disabled>新增会员</el-button>
                     </div>
                 </div>
                 <div class="content">
@@ -168,15 +159,22 @@ const rowClick = (row) => console.log(row)
                             <el-table-column prop="mobile" label="手机号" show-overflow-tooltip align="center"
                                 :formatter="replace" />
                             <el-table-column prop="" label="生日" width="120" align="center" />
-                            <el-table-column prop="" label="折扣" align="center" />
+                            <el-table-column label="折扣" align="center">
+                                {{ store.obb || '-' }}
+                            </el-table-column>
                             <el-table-column prop="balance" label="储值余额" min-width="100" show-overflow-tooltip
                                 align="center" />
                             <el-table-column prop="points" label="会员积分" min-width="100" show-overflow-tooltip
                                 align="center" />
                             <el-table-column prop="create_time" label="注册时间" width="120" align="center"
                                 :formatter="(row, column, cellValue) => cellValue.split(' ')[0] || '-'" />
-                            <el-table-column prop="vip" label="会员状态" width="100" align="center"
-                                :formatter="(row, column, cellValue) => `${+cellValue ? '已' : '未'}激活`" />
+                            <el-table-column prop="vip" label="会员状态" width="100" align="center">
+                                <template #default="scope">
+                                    <el-tag :type="+scope.row.vip ? 'success' : 'info'" size="small">
+                                        {{ `${+scope.row.vip ? '激活' : '注销'}` }}
+                                    </el-tag>
+                                </template>
+                            </el-table-column>
                         </el-table>
                         <el-pagination class="pagination" v-model:current-page="currentPage" :total="page.total"
                             :page-size="page.pageSize" layout="total, prev, pager, next" hide-on-single-page />
@@ -220,17 +218,17 @@ const rowClick = (row) => console.log(row)
     font-size: 15px;
 }
 
-.discount-btn:hover {
+.discount-btn:not(.is-disabled):hover {
     color: var(--el-button-text-color);
     border-color: var(--el-border-color-hover);
 }
 
-.discount-btn:focus {
+.discount-btn:not(.is-disabled):focus {
     color: var(--el-button-text-color);
     border-color: var(--el-button-hover-border-color);
 }
 
-.discount-btn:active {
+.discount-btn:not(.is-disabled):active {
     color: var(--el-button-active-text-color);
     background-color: var(--el-color-primary-light-9);
 }

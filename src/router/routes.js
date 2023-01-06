@@ -18,11 +18,26 @@ const routes = [
         }
     }, {
         path: '/vip',
-        name: 'vip',
-        component: () => import('~/pages/vip/index.vue'),
         meta: {
             admin: true
-        }
+        },
+        children: [{
+            path: '',
+            name: 'vip',
+            component: () => import('~/pages/vip/index.vue'),
+        }, {
+            path: 'setting',
+            component: () => import('~/pages/vip/setting/index.vue'),
+            children: [{
+                path: '',
+                name: 'vipSetting',
+                component: () => import('~/pages/vip/setting/base.vue'),
+            }, {
+                path: 'auto',
+                name: 'vipAuto',
+                component: () => import('~/pages/vip/setting/auto.vue')
+            }]
+        }]
     }, {
         path: '/login',
         name: 'login',
