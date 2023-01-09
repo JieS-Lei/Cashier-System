@@ -104,6 +104,16 @@ const replace = (row, column, cellValue, index) => {
     return +cellValue || '-'
 }
 
+// 获取会员基本设置
+if (!store.setting.discount_ratio) {
+    apis.getVipSetting().then(([error, { data: { data }, code }]) => {
+        if (error || 1 !== code) return false
+        data.is_open = !!+data.is_open
+        data.one_pay_money_open = !!+data.one_pay_money_open
+        store.setSetting(data)
+    })
+}
+
 const rowClick = (row) => console.log(row)
 
 
@@ -111,7 +121,7 @@ const rowClick = (row) => console.log(row)
 </script>
 <template>
     <el-scrollbar>
-        <el-container class="container" style="width: 100vw;">
+        <el-container class="container">
             <el-header class="header">
                 <div class="box">
                     <el-button size="large" text @click="router.back()">
@@ -160,7 +170,7 @@ const rowClick = (row) => console.log(row)
                                 :formatter="replace" />
                             <el-table-column prop="" label="生日" width="120" align="center" />
                             <el-table-column label="折扣" align="center">
-                                {{ store.obb || '-' }}
+                                {{ store.setting.discount_ratio ? `${store.setting.discount_ratio}折` : '-' }}
                             </el-table-column>
                             <el-table-column prop="balance" label="储值余额" min-width="100" show-overflow-tooltip
                                 align="center" />

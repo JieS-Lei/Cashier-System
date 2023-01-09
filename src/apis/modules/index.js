@@ -41,6 +41,10 @@ export const goodsApi = {
     autoCreateBarCode: () => Post('cashier/autoGenOrderNo'),
     // 获取会员列表
     getVips: data => Post('cashier/listUser', data),
+    // 获取会员基础设置
+    getVipSetting: () => Post('cashier/getVipSetting'),
+    // 设置会员基础设置
+    setVIPSetting: data => Post('cashier/vipSetting', data),
 };
 
 // 文件上传
