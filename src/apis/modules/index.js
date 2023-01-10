@@ -43,8 +43,10 @@ export const goodsApi = {
     getVips: data => Post('cashier/listUser', data),
     // 获取会员基础设置
     getVipSetting: () => Post('cashier/getVipSetting'),
-    // 设置会员基础设置
+    // 修改会员基础设置
     setVIPSetting: data => Post('cashier/vipSetting', data),
+    // 修改会员信息
+    setVip: data => Post('cashier/setUserInfo', data),
 };
 
 // 文件上传

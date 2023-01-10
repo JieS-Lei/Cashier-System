@@ -129,11 +129,11 @@ const submitForm = async formEl => {
             <el-switch v-model="form.is_open" />
         </el-form-item>
         <el-form-item label="会员费" prop="fee">
-            <el-input diss v-model="form.fee" :formatter="priceFormatter" @blur="priceBlur('fee')"
+            <el-input :disabled="!form.is_open" v-model="form.fee" :formatter="priceFormatter" @blur="priceBlur('fee')"
                 onfocus="this.select()" />
         </el-form-item>
         <el-form-item label="会员折扣" prop="discount_ratio">
-            <el-select v-model="form.discount_ratio">
+            <el-select :disabled="!form.is_open" v-model="form.discount_ratio">
                 <template v-for="index of 3">
                     <el-option v-for="i in 10" :label="`${(index + 6) * 10 + i - 1} 折`"
                         :value="`${(index + 6) * 10 + i - 1}`" />
@@ -142,8 +142,8 @@ const submitForm = async formEl => {
             </el-select>
         </el-form-item>
         <el-form-item label="最低折扣金额" prop="vip_min_money">
-            <el-input v-model="form.vip_min_money" :formatter="priceFormatter" @blur="priceBlur('vip_min_money')"
-                onfocus="this.select()" />
+            <el-input :disabled="!form.is_open" v-model="form.vip_min_money" :formatter="priceFormatter"
+                @blur="priceBlur('vip_min_money')" onfocus="this.select()" />
         </el-form-item>
         <el-alert class="a-info" type="info" show-icon :closable="false">
             <p>用户单次消费金额达到此额度后自动成为会员，享有会员权益</p>
@@ -152,8 +152,8 @@ const submitForm = async formEl => {
             <el-switch v-model="form.one_pay_money_open" />
         </el-form-item>
         <el-form-item label="消费金额" prop="one_pay_money">
-            <el-input v-model="form.one_pay_money" :formatter="priceFormatter" @blur="priceBlur('one_pay_money')"
-                onfocus="this.select()" />
+            <el-input :disabled="!form.one_pay_money_open" v-model="form.one_pay_money" :formatter="priceFormatter"
+                @blur="priceBlur('one_pay_money')" onfocus="this.select()" />
         </el-form-item>
         <el-alert class="a-info" type="info" show-icon :closable="false">
             <p>用户支付结束后，出现在支付页面的引导图</p>
