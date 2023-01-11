@@ -94,7 +94,7 @@ export const priceBlurFormatter = value => {
  *  @param format 日期格式  默认 yyyy-MM-dd HH:mm:ss格式
  */
 export const formatDate = (date, format = 'yyyy-MM-dd HH:mm:ss 星期w') => {
-    if (!date) return date
+    if (!date || date.length < 4) return date
     const typeDate = date instanceof Date ? date.getTime() : date
     date = new Date(typeDate)
     const obj = {

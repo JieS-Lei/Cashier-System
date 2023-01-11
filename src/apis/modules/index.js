@@ -47,6 +47,10 @@ export const goodsApi = {
     setVIPSetting: data => Post('cashier/vipSetting', data),
     // 修改会员信息
     setVip: data => Post('cashier/setUserInfo', data),
+    // 成为会员
+    becomeVip: user_id => Post('cashier/setUserVip', { user_id }),
+    // 取消会员
+    cancelVip: user_id => Post('cashier/cancelUserVip', { user_id }),
 };
 
 // 文件上传

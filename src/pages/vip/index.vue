@@ -5,6 +5,7 @@ import { debounce } from '~/utils'
 import { useVipStore } from '~/store/modules/vipStore'
 import { watch } from 'vue';
 import { formatDate } from '~/utils';
+import { ElMessage } from 'element-plus';
 
 const router = useRouter()
 const store = useVipStore()
@@ -103,7 +104,8 @@ const getVipList = async () => {
 }
 // 替换空数据
 const replace = (row, column, cellValue, index) => {
-    return +cellValue || '-'
+    if (/^\d+$/.test(cellValue)) return +cellValue || '-'
+    return cellValue || '-'
 }
 
 // 获取会员基本设置
@@ -125,7 +127,6 @@ const rowClick = row => {
     if (isEdit.value) isEdit.value = false
     vipInfo.value = row
     dialogInfoVisible.value = true
-    console.log(row);
 }
 const editForm = reactive({})
 const editFn = () => {
@@ -148,13 +149,11 @@ const onHoverTip = event => {
     visible.value = true
 }
 
-const handleUnd = data => {
-    if (!data || !+data || !data.length) return '-'
-    return data
-}
+const handleUnd = data => replace(null, null, data)
 
 // 提交修改
-const submitEdit = () => {
+const editLoading = ref(false)
+const submitEdit = async () => {
     let options = {}
     if (vipInfo.value.nickName && !editForm.nickName) return ElMessage.warning({ message: '未填写会员名称', grouping: true })
     if (+vipInfo.value.mobile && !+editForm.mobile) return ElMessage.warning({ message: '未填写手机号', grouping: true })
@@ -165,13 +164,83 @@ const submitEdit = () => {
                 if (value != +vipInfo.value.mobile) options.mobile = value
             } else if (key === 'birthday') {
                 let tempDate = formatDate(value, 'yyyy-MM-dd')
-                if (tempDate != vipInfo.value.birthday) options.birthday = value
+                if (tempDate != vipInfo.value.birthday) options.birthday = value.getTime()
             } else if (value !== vipInfo.value[key]) options[key] = value
         }
     }
     if (!Object.keys(options).length) return isEdit.value = false
-    // apis.setVip()
+    if (options.gender) options.gender = +{ '男': 1, '女': 2 }[options.gender]
+    options.user_id = vipInfo.value.user_id
+    editLoading.value = true
+    let [error, { code }] = await apis.setVip(options)
+    editLoading.value = false
+    if (error || 1 !== code) {
+        ElMessage('保存失败')
+        return isEdit.value = false
+    }
+    ElMessage.success('保存成功')
+    dialogInfoVisible.value = false
+    getVipList()
 }
+
+// 激活|注销 会员
+const handleUserToVip = type => ElMessageBox({
+    title: '提示',
+    message: h('p', null, [
+        '确定',
+        h('i', { style: 'margin: 0 5px;color: teal' }, type ? '激活' : '注销'),
+        '会员信息？'
+    ]),
+    cancelButtonText: '取消',
+    confirmButtonText: type ? '激活' : '注销',
+    center: true,
+    showCancelButton: true,
+    showClose: false,
+    draggable: true,
+    customStyle: {
+        display: 'block',
+        margin: '18vh auto 0'
+    },
+    async beforeClose(action, instance, done) {
+        if (action !== 'confirm') return done()
+        instance.confirmButtonLoading = true
+        let [error, { code }] = await apis[`${type ? 'become' : 'cancel'}Vip`](vipInfo.value.user_id)
+        if (error || 1 !== code) ElMessage(type ? '激活' : '注销' + '失败，请重试！')
+        else {
+            ElMessage.success((type ? '激活' : '注销') + '成功')
+            vipInfo.value.vip = +type
+            dialogInfoVisible.value = false
+        }
+        done()
+    }
+})
+
+// 修改会员积分
+// const handleVipIntegral = () = ElMessageBox({
+//     title: `当前可以积分${vipInfo.value.}`,
+//     cancelButtonText: '取消',
+//     confirmButtonText: '保存',
+//     center: true,
+//     showCancelButton: true,
+//     showClose: false,
+//     draggable: true,
+//     customStyle: {
+//         display: 'block',
+//         margin: '18vh auto 0'
+//     },
+//     async beforeClose(action, instance, done) {
+//         if (action !== 'confirm') return done()
+//         instance.confirmButtonLoading = true
+//         let [error, { code }] = await apis[`${type ? 'become' : 'cancel'}Vip`](vipInfo.value.user_id)
+//         if (error || 1 !== code) ElMessage(type ? '激活' : '注销' + '失败，请重试！')
+//         else {
+//             ElMessage.success((type ? '激活' : '注销') + '成功')
+//             vipInfo.value.vip = +type
+//             dialogInfoVisible.value = false
+//         }
+//         done()
+//     }
+// })
 
 
 </script>
@@ -224,8 +293,12 @@ const submitEdit = () => {
                                 :formatter="replace" />
                             <el-table-column prop="mobile" label="手机号" show-overflow-tooltip align="center"
                                 :formatter="replace" />
-                            <el-table-column prop="birthday" label="生日" width="120" align="center"
-                                :formatter="replace" />
+                            <el-table-column prop="birthday" label="生日" width="120" align="center">
+                                <template #default="scope">
+                                    {{ formatDate(replace(scope.row, scope.column, scope.row.birthday, scope.$index),
+                                    'yyyy-MM-dd') }}
+                                </template>
+                            </el-table-column>>
                             <el-table-column label="折扣" align="center">
                                 {{ store.setting.discount_ratio ? `${store.setting.discount_ratio}折` : '-' }}
                             </el-table-column>
@@ -270,7 +343,8 @@ const submitEdit = () => {
                         style="flex: .6;" placeholder="请输入手机号" maxlength="20" />
                 </el-row>
             </div>
-            <el-button type="danger">注销</el-button>
+            <el-button v-show="vipInfo.vip" type="danger" @click="handleUserToVip(0)">注销</el-button>
+            <el-button v-show="!vipInfo.vip" @click="handleUserToVip(1)">激活</el-button>
         </header>
         <el-divider />
         <el-row class="assets">
@@ -300,7 +374,7 @@ const submitEdit = () => {
             <div class="item">
                 <span class="tit">会员生日</span>
                 <span class="con" v-if="!isEdit">{{ handleUnd(vipInfo.birthday) }}</span>
-                <el-date-picker v-else v-model="editForm.birthday" type="date" placeholder="请选择日期" />
+                <el-date-picker v-else v-model="editForm.birthday" type="date" :clearable="false" placeholder="请选择日期" />
             </div>
             <div class="item">
                 <span class="tit">联系地址</span>
@@ -329,7 +403,8 @@ const submitEdit = () => {
             </div>
             <div class="dialog-footer" v-else>
                 <el-button plain size="large" style="width: 100px" @click="isEdit = false">取消</el-button>
-                <el-button type="primary" size="large" style="width: 100px" @click="submitEdit">保存</el-button>
+                <el-button type="primary" size="large" :loading="editLoading" style="width: 100px"
+                    @click="submitEdit">保存</el-button>
             </div>
         </template>
     </el-dialog>
