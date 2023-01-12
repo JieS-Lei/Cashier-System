@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router'
 import { useUserStore } from '~/store/modules/userStore.js'
 import { apis } from '~/apis'
+import { onMounted } from 'vue';
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -48,13 +49,13 @@ const onLogin = function (formEl) {
         user_name: loginForm.uname,
         password: loginForm.pwd
       })
-      loading.value = false
       if (error) console.warn(error)
-      else if (result.code !== 1) console.log(`${result.code} - ${result.msg}`)
+      else if (result.code !== 1) console.warn(`${result.code} - ${result.msg}`)
       else {
         const { token } = result.data
         userStore.setToken(token)
         if (loginForm.remember) localStorage.setItem('token', token)
+        userStore.getUserInfo(apis.getAdminInfo) // 获取登录人员信息
         ElMessage.success('登录成功')
         formEl.resetFields()
         router.replace({ name: 'home' })
@@ -66,6 +67,17 @@ const onLogin = function (formEl) {
     }
   })
 }
+
+const onKeyupFn = event => {
+  if (event.key !== 'Enter' || !formRef.value) return
+  onLogin(formRef.value, event)
+}
+onMounted(() => {
+  document.addEventListener('keyup', onKeyupFn)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('keyup', onKeyupFn)
+})
 
 </script>
 <template>

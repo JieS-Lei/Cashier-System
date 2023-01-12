@@ -10,12 +10,14 @@ import {
 
 const instance = axios.create();
 
+// 请求过滤
 instance.interceptors.request.use(config => {
     config = handleChangeRequestConfig(config)
     config = handleConfigureAuth(config)
     return config
 })
 
+// 响应过滤
 instance.interceptors.response.use(
     response => {
         if (response.status !== 200) return Promise.reject(response.data)

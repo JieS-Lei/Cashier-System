@@ -2,7 +2,8 @@ import { Get, Post } from "../server";
 
 // 登录相关
 export const loginApi = {
-    login: data => Post("cashier/login", data)
+    login: data => Post('cashier/login', data),
+    getAdminInfo: token => Post('cashier/getStoreUser', { token })
 };
 
 // 商品相关
@@ -51,6 +52,8 @@ export const goodsApi = {
     becomeVip: user_id => Post('cashier/setUserVip', { user_id }),
     // 取消会员
     cancelVip: user_id => Post('cashier/cancelUserVip', { user_id }),
+    // 会员 积分|余额 充值
+    vipRecharge: data => Post('cashier/recharge', data),
 };
 
 // 文件上传

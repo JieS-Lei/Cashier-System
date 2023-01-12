@@ -212,35 +212,77 @@ const handleUserToVip = type => ElMessageBox({
             dialogInfoVisible.value = false
         }
         done()
-    }
+    },
+    callback() { }
 })
 
 // 修改会员积分
-// const handleVipIntegral = () = ElMessageBox({
-//     title: `当前可以积分${vipInfo.value.}`,
-//     cancelButtonText: '取消',
-//     confirmButtonText: '保存',
-//     center: true,
-//     showCancelButton: true,
-//     showClose: false,
-//     draggable: true,
-//     customStyle: {
-//         display: 'block',
-//         margin: '18vh auto 0'
-//     },
-//     async beforeClose(action, instance, done) {
-//         if (action !== 'confirm') return done()
-//         instance.confirmButtonLoading = true
-//         let [error, { code }] = await apis[`${type ? 'become' : 'cancel'}Vip`](vipInfo.value.user_id)
-//         if (error || 1 !== code) ElMessage(type ? '激活' : '注销' + '失败，请重试！')
-//         else {
-//             ElMessage.success((type ? '激活' : '注销') + '成功')
-//             vipInfo.value.vip = +type
-//             dialogInfoVisible.value = false
-//         }
-//         done()
-//     }
-// })
+
+const handleVipIntegral = () => {
+    const integral = reactive({
+        checked: true,
+        val: ''
+    })
+    ElMessageBox({
+        message: () => h('div', null, [
+            h('div', null, [
+                h('span', null, '修改方式：'),
+                h(ElSwitch, {
+                    modelValue: integral.checked,
+                    'onUpdate:modelValue': val => integral.checked = val,
+                    activeText: "增加",
+                    inactiveText: "减少",
+                    inlinePrompt: true,
+                    style: "--el-switch-off-color: #F56C6C",
+                    disabled: !+vipInfo.value.points
+                })
+            ]),
+            h('div', { style: 'margin-top: 5px' }, [
+                h(ElInput, {
+                    modelValue: integral.val,
+                    'onUpdate:modelValue': value => integral.val = value,
+                    placeholder: `请输入积分数量`,
+                    formatter: value => {
+                        value = value.replace(/^0|\D/g, '')
+                        if (value > 9999999) value = '9999999'
+                        return value.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                    },
+                })
+            ])
+        ]),
+        title: `当前可用积分：${vipInfo.value.points}`,
+        showCancelButton: true,
+        cancelButtonText: '取消',
+        confirmButtonText: '保存',
+        showClose: false,
+        center: true,
+        draggable: true,
+        autofocus: false,
+        async beforeClose(action, instance, done) {
+            if (action !== 'confirm') return done()
+            let integralNum = +integral.val.replace(/\$\s?|(,*)/g, '')
+            if (!integralNum) return ElMessage.warning({ message: '请输入积分数量', grouping: true })
+            if (!integral.checked && integralNum > vipInfo.value.points) return ElMessage.warning({ message: `此用户积分不足，最多只能减少 ${vipInfo.value.points} 积分`, grouping: true })
+            instance.confirmButtonLoading = true
+            let [error, { code }] = await apis.vipRecharge({
+                user_id: vipInfo.value.user_id,
+                mode: integral.checked ? 'inc' : 'dec',
+                num: integralNum,
+                source: 1,
+                remark: '管理员后台充值'
+            })
+            if (error || 1 !== code) ElMessage('保存失败')
+            else {
+                ElMessage.success('保存失败')
+                vipInfo.value.vip = +type
+                dialogInfoVisible.value = false
+            }
+            done()
+        },
+        callback() { }
+    })
+}
+
 
 
 </script>
@@ -352,8 +394,8 @@ const handleUserToVip = type => ElMessageBox({
                 <div class="integral">
                     <div>可用积分</div>
                     <div class="num">
-                        <span>0</span>
-                        <el-icon style="cursor: pointer;">
+                        <span>{{ vipInfo.points || 0 }}</span>
+                        <el-icon style="cursor: pointer;" @click="handleVipIntegral">
                             <epEdit />
                         </el-icon>
                     </div>
@@ -363,7 +405,7 @@ const handleUserToVip = type => ElMessageBox({
                 <div class="balance">
                     <div>余额（元）</div>
                     <div class="num">
-                        <span>0</span>
+                        <span>{{ vipInfo.balance || '0.00' }}</span>
                         <el-button type="warning" plain>充值</el-button>
                     </div>
                 </div>

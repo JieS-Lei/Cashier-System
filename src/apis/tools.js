@@ -1,5 +1,6 @@
 import { ElMessage as message } from 'element-plus'
 import { useUserStore } from '~/store/modules/userStore.js'
+import router from '~/router'
 
 const userStore = useUserStore()
 
@@ -22,8 +23,14 @@ export const handleChangeRequestConfig = config => {
 }
 
 // token 处理
+const notAuthInterface = ['cashier/login'] // 不需要token接口
 export const handleConfigureAuth = config => {
-    config.headers["token"] = userStore.token || ""
+    let token = userStore.token || ""
+    if (!notAuthInterface.includes(config.url) && !token) {
+        console.log(config.url);
+        router.replace({ name: 'login' })
+    }
+    config.headers["token"] = token
     return config
 }
 
