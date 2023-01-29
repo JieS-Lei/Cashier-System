@@ -81,6 +81,7 @@ export const priceChangeFormatter = value => {
 
 // blur时完善输入的金额
 export const priceBlurFormatter = value => {
+    if ('number' === typeof value) value = value.toString()
     if (!value) return value = '0.00'
     value = value.replace(/^0(?=[0-9])/, '')
     if (!value.includes('.')) value += '.00'

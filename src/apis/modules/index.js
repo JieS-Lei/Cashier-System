@@ -54,6 +54,8 @@ export const goodsApi = {
     cancelVip: user_id => Post('cashier/cancelUserVip', { user_id }),
     // 会员 积分|余额 充值
     vipRecharge: data => Post('cashier/recharge', data),
+    // 获取用户余额改变记录
+    getBalanceRecord: data => Post('cashier/getBalanceLog', data),
 };
 
 // 文件上传

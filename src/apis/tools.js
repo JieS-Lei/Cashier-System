@@ -12,6 +12,12 @@ const base_url = {
 }
 export const baseURL = base_url[import.meta.env.MODE]
 
+const logout = () => {
+    window.localStorage.removeItem('token')
+    userStore.clear()
+    router.replace({ name: 'login' })
+}
+
 // config change
 export const handleChangeRequestConfig = config => {
     config.baseURL = baseURL
@@ -26,11 +32,10 @@ export const handleChangeRequestConfig = config => {
 const notAuthInterface = ['cashier/login'] // 不需要token接口
 export const handleConfigureAuth = config => {
     let token = userStore.token || ""
-    if (!notAuthInterface.includes(config.url) && !token) {
-        console.log(config.url);
-        router.replace({ name: 'login' })
+    if (!notAuthInterface.includes(config.url)) {
+        if (!token) return router.replace({ name: 'login' })
+        config.headers["token"] = token
     }
-    config.headers["token"] = token
     return config
 }
 
@@ -62,16 +67,12 @@ export const handleNetworkError = errStatus => {
 export const handleAuthError = errCode => {
     const authErrMap = {
         "-1": "登录失效，需要重新登录", // token 失效
-        "10032": "您太久没登录，请重新登录~", // token 过期
-        "10033": "账户未绑定角色，请联系管理员绑定角色",
-        "10034": "该用户未注册，请联系管理员注册用户",
-        "10037": "账号已无效",
         "10038": "账号未找到",
     }
     if (authErrMap.hasOwnProperty(errCode)) {
         message.error({ message: authErrMap[errCode], grouping: true })
         // 授权错误，登出账户
-        // logout();
+        logout();
         return false
     }
 

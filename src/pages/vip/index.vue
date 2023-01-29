@@ -1,14 +1,15 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { apis } from '~/apis'
-import { debounce } from '~/utils'
 import { useVipStore } from '~/store/modules/vipStore'
 import { watch } from 'vue';
-import { formatDate } from '~/utils';
 import { ElMessage } from 'element-plus';
+import { useUserStore } from '~/store/modules/userStore'
+import { priceChangeFormatter as priceFormatter, priceBlurFormatter, debounce, formatDate } from '~/utils'
 
 const router = useRouter()
 const store = useVipStore()
+const userStore = useUserStore()
 
 const search = ref('') // 搜索内容
 const searchFn = () => console.log(search.value)
@@ -137,7 +138,6 @@ const editFn = () => {
     isEdit.value = true
 }
 
-
 const visible = ref(false) // 拓展提示框显隐
 const triggerRef = ref() // 拓展提示框位置
 const triggerTxt = ref('') // 内容
@@ -216,9 +216,20 @@ const handleUserToVip = type => ElMessageBox({
     callback() { }
 })
 
-// 修改会员积分
+// 判断管理员信息是否存在
+const judgeAdminId = callback => {
+    if (!userStore.userInfo.store_user_id) {
+        const loadingRef = ElLoading.service({ text: '正在初始化管理员信息', fullscreen: true })
+        return userStore.getUserInfo(apis.getAdminInfo, callback, loadingRef)
+    }
+    callback()
+}
 
-const handleVipIntegral = () => {
+// 修改会员积分
+const handleVipIntegral = () => judgeAdminId(handleVipIntegralCallback)
+const handleVipIntegralCallback = (res, loadingRef) => {
+    loadingRef?.close()
+    if (res && (res[0] || 1 !== res[1]?.code)) return false
     const integral = reactive({
         checked: true,
         val: ''
@@ -269,12 +280,14 @@ const handleVipIntegral = () => {
                 mode: integral.checked ? 'inc' : 'dec',
                 num: integralNum,
                 source: 1,
-                remark: '管理员后台充值'
+                remark: userStore.userInfo.real_name + '后台充值',
+                store_user_name: userStore.userInfo.real_name,
             })
             if (error || 1 !== code) ElMessage('保存失败')
             else {
-                ElMessage.success('保存失败')
-                vipInfo.value.vip = +type
+                ElMessage.success('保存成功')
+                let num = +vipInfo.value.points
+                vipInfo.value.points = integral.checked ? num + integralNum : num - integralNum
                 dialogInfoVisible.value = false
             }
             done()
@@ -283,7 +296,69 @@ const handleVipIntegral = () => {
     })
 }
 
+// 会员余额充值
+const balanceRechargeVisible = ref(false)
+const BalRecForm = reactive({
+    giveMoney: '',
+    rechargeMoney: ''
+})
+const rechargeRecord = ref([]) // 表格数据
+const tablePageOption = reactive({
+    currentPage: 1,
+    pageSize: 5,
+    total: 0,
+})
+// 页数改变 重新获取数据
+watch(() => tablePageOption.currentPage, () => getRecordList())
+// 打开充值对话框
+const serverError = ref(false) // 表格数据加载是否错误
+const tableLoading = ref(false) // 表格数据加载中
+const getRecordList = async () => {
+    tableLoading.value = true
+    let [error, { code, data: { data } }] = await apis.getBalanceRecord({
+        user_id: vipInfo.value.user_id,
+        // user_id: 10126,
+        page: tablePageOption.currentPage,
+        listRows: tablePageOption.pageSize
+    })
+    tableLoading.value = false
+    if (error || 1 !== code) return rechargeRecord.value = true
+    console.log(data);
+    tablePageOption.total = data.total
+    rechargeRecord.value = data.data
+}
+const rechargeBtnClick = () => judgeAdminId(rechargeBtnClickCallback)
+const rechargeBtnClickCallback = () => {
+    balanceRechargeVisible.value = true
+    tablePageOption.total = 0
+    if (tablePageOption.currentPage - 1) tablePageOption.currentPage = 1
+    else getRecordList()
+}
 
+const priceBlur = key => {
+    let money = priceBlurFormatter(BalRecForm[key])
+    BalRecForm.rechargeMoney = +money ? money : ''
+}
+const balRecLoading = ref(false)
+const balRecSubmit = async () => {
+    if (!BalRecForm.rechargeMoney) return ElMessage.warning({ message: '请输入充值金额', grouping: true })
+    balRecLoading.value = true
+    let [error, { code }] = await apis.vipRecharge({
+        user_id: vipInfo.value.user_id,
+        mode: 'inc',
+        num: BalRecForm.rechargeMoney,
+        source: 0,
+        remark: userStore.userInfo.real_name + '后台充值',
+        store_user_name: userStore.userInfo.real_name,
+    })
+    balRecLoading.value = false
+    if (error || 1 !== code) return ElMessage('充值失败')
+    ElMessage.success('充值成功')
+    let num = +vipInfo.value.balance
+    vipInfo.value.balance = priceBlurFormatter(+BalRecForm.rechargeMoney + num)
+    BalRecForm.rechargeMoney = ''
+    getRecordList()
+}
 
 </script>
 <template>
@@ -381,7 +456,7 @@ const handleVipIntegral = () => {
                 <p v-if="!isEdit">{{ handleUnd(vipInfo.mobile) }}</p>
                 <el-row v-else align="middle">
                     <span class="tit" style="margin-right: 10px;">联系电话</span>
-                    <el-input v-model="editForm.mobile" :formatter="(value) => `${value}`.replace(/\D/g, '')"
+                    <el-input v-model="editForm.mobile" :formatter="value => `${value}`.replace(/\D/g, '')"
                         style="flex: .6;" placeholder="请输入手机号" maxlength="20" />
                 </el-row>
             </div>
@@ -406,7 +481,7 @@ const handleVipIntegral = () => {
                     <div>余额（元）</div>
                     <div class="num">
                         <span>{{ vipInfo.balance || '0.00' }}</span>
-                        <el-button type="warning" plain>充值</el-button>
+                        <el-button type="warning" plain @click="rechargeBtnClick">充值</el-button>
                     </div>
                 </div>
             </el-col>
@@ -449,6 +524,57 @@ const handleVipIntegral = () => {
                     @click="submitEdit">保存</el-button>
             </div>
         </template>
+    </el-dialog>
+    <el-dialog class="balanceRechargeDialog" v-model="balanceRechargeVisible" title="会员充值" center width="800" draggable
+        :close-on-click-modal="false" align-center>
+        <div class="b-r-block">
+            <el-row>
+                <el-col :span="12">
+                    <el-descriptions :column="1" class="fWeight">
+                        <el-descriptions-item label="会员姓名:">{{ handleUnd(vipInfo.nickName) }}</el-descriptions-item>
+                        <el-descriptions-item label="手机号:">{{ handleUnd(vipInfo.mobile) }}</el-descriptions-item>
+                        <el-descriptions-item label="当前余额:">{{ vipInfo.balance }}</el-descriptions-item>
+                    </el-descriptions>
+                </el-col>
+                <el-col :span="12">
+                    <el-form :model="BalRecForm" class="fWeight" label-width="80px">
+                        <el-form-item label="充值金额" required>
+                            <el-input v-model="BalRecForm.rechargeMoney" :formatter="priceFormatter"
+                                @blur="priceBlur('rechargeMoney')" onfocus="this.select()" style="width: auto;" />
+                            <template #error>
+                                <div class="el-form-item__error">请输入充值金额</div>
+                            </template>
+                        </el-form-item>
+                        <el-form-item label="赠送金额">
+                            <el-input v-model="BalRecForm.giveMoney" disabled style="width: auto;" />
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" :loading="balRecLoading" @click="balRecSubmit">充值</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-col>
+            </el-row>
+        </div>
+        <el-divider />
+        <div class="b-r-record" v-loading="tableLoading">
+            <el-table v-if="!serverError" :data="rechargeRecord" style="width: 100%;max-height: 285px;">
+                <el-table-column prop="create_time" label="日期" min-width="130" />
+                <el-table-column prop="money" label="充值/消费/赠送" align="center" />
+                <el-table-column prop="scene.text" label="来源" align="center" />
+                <el-table-column prop="remark" label="描述" align="center" />
+                <el-table-column prop="account_type"
+                    :formatter="(row, column, cellValue) => ['现金', '微信', '支付宝'][cellValue - 1]" label="收款账户"
+                    align="center" />
+            </el-table>
+            <el-pagination v-if="!serverError" class="pagination" v-model:current-page="tablePageOption.currentPage"
+                :total="tablePageOption.total" :page-size="tablePageOption.pageSize" layout="total, prev, pager, next"
+                style="margin-top: 5px;" />
+            <el-result v-else icon="error" title="加载余额记录出错" sub-title="请关闭对话框重新打开加载余额记录">
+                <template #extra>
+                    <el-button type="primary" @click="balanceRechargeVisible = serverError = false">关闭</el-button>
+                </template>
+            </el-result>
+        </div>
     </el-dialog>
 </template>
 <style scoped>
@@ -563,6 +689,12 @@ const handleVipIntegral = () => {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     line-height: 1.1;
+}
+
+.fWeight:deep(.el-descriptions__cell),
+.fWeight:deep(.el-form-item__label) {
+    /* font-size: 15px; */
+    font-weight: bold;
 }
 </style>
 <style>
