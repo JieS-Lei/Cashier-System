@@ -12,27 +12,26 @@ const store = useVipStore()
 const userStore = useUserStore()
 
 const search = ref('') // 搜索内容
-const searchFn = () => console.log(search.value)
 
 const birthdayOptions = [{
-    value: '0',
+    value: '',
     label: '全部',
 }, {
-    value: '1',
+    value: 'month',
     label: '本月',
 }, {
-    value: '2',
+    value: 'today',
     label: '本日',
 }]
-const birthdayVal = ref('')
+const birthdayVal = ref()
 const statusOption = [{
-    value: '0',
+    value: '-1',
     label: '全部',
 }, {
     value: '1',
     label: '已激活',
 }, {
-    value: '2',
+    value: '0',
     label: '未激活',
 }]
 const statusVal = ref('1')
@@ -95,6 +94,8 @@ const getVipList = async () => {
         page: currentPage.value,
         listRows: page.pageSize,
         search: search.value,
+        birthday: birthdayVal.value,
+        vip: statusVal.value
     }
     // console.log(options);
     let [error, { data, code }] = await apis.getVips(options)
@@ -383,12 +384,14 @@ const balRecSubmit = async () => {
                 <div class="top">
                     <div class="left">
                         <el-input v-model="search" class="large search radius" placeholder="请输入姓名/手机号/刷卡" clearable
-                            @change="searchFn" />
-                        <el-select v-model="birthdayVal" class="large radius select" placeholder="生日设置" size="large">
+                            @change="getVipList" />
+                        <el-select v-model="birthdayVal" class="large radius select" placeholder="生日设置" size="large"
+                            @change="getVipList">
                             <el-option v-for="item in birthdayOptions" :key="item.value" :label="item.label"
                                 :value="item.value" />
                         </el-select>
-                        <el-select v-model="statusVal" class="large radius select" placeholder="会员状态" size="large">
+                        <el-select v-model="statusVal" class="large radius select" placeholder="会员状态" size="large"
+                            @change="getVipList">
                             <el-option v-for="item in statusOption" :key="item.value" :label="item.label"
                                 :value="item.value" />
                         </el-select>

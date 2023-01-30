@@ -39,6 +39,13 @@ const routes = [
             }]
         }]
     }, {
+        path: '/checkout',
+        name: 'checkout',
+        component: () => import('~/pages/checkout/index.vue'),
+        meta: {
+            admin: true
+        }
+    }, {
         path: '/login',
         name: 'login',
         component: () => import('~/pages/login/index.vue'),

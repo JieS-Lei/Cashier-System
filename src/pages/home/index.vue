@@ -13,10 +13,10 @@ let dropdownShow = ref(false)
 const command = function (command) {
     ElMessage(`click on item ${command}`)
 }
-const todo = function (event) {
-    let target = event.target
-    console.log(event);
-}
+// const todo = function (event) {
+//     let target = event.target
+//     console.log(event);
+// }
 
 
 </script>
@@ -28,8 +28,7 @@ const todo = function (event) {
                 <icon-image src="/logo.jpg" widHei="100%" bg />
             </div>
             <el-scrollbar class="menu">
-                <!-- <div class="menu-btn-parent" @click="todo"> -->
-                <el-button-group class="menu-btn-parent" @click="todo">
+                <el-button-group class="menu-btn-parent">
                     <router-link class="menu-btn" :to="button.link" v-for="button in buttons" :key="button.text">
                         <el-button :type="button.type" size="default" text bg style="width: 100%;height: 100%;">
                             <icon-image class="menu-btn-icon" :src="button.icon" />
@@ -37,12 +36,13 @@ const todo = function (event) {
                         </el-button>
                     </router-link>
                 </el-button-group>
-                <!-- </div> -->
                 <div class="cashier">
-                    <el-button class="cashier-btn" color="#b4995a">
-                        <icon-image widHei="50" src="/logos.jpg" style="margin-bottom: 10px;" />
-                        收银台
-                    </el-button>
+                    <router-link :to="{ name: 'checkout' }">
+                        <el-button class="cashier-btn" color="#b4995a">
+                            <icon-image widHei="50" src="/logos.jpg" style="margin-bottom: 10px;" />
+                            收银台
+                        </el-button>
+                    </router-link>
                 </div>
             </el-scrollbar>
         </el-aside>
