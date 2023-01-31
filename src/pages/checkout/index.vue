@@ -51,7 +51,6 @@ document.addEventListener('keyup', event => {
                 <el-footer>Footer</el-footer>
             </el-container>
         </el-container>
-
     </el-container>
 </template>
 <style scoped>
@@ -108,6 +107,7 @@ document.addEventListener('keyup', event => {
 
 .container .shell {
     padding: 10px;
+    overflow: hidden;
 }
 
 .container .aside {
