@@ -111,6 +111,7 @@ document.addEventListener('keyup', event => {
 }
 
 .container .aside {
+    overflow: hidden;
     margin-right: 10px;
     background-color: #fff;
 }

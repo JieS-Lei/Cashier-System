@@ -6,7 +6,7 @@ export const useGoodsStore = defineStore('goods', {
             typeList: [], // 分类数据
             unitList: [], // 商品单位数据
             checkedUnit: {}, // 选中的单位
-            checkedType: {}, // 选中的单位
+            checkedType: {}, // 选中的分类
             rowForm: {} // 修改的单行数据
         }
     },
