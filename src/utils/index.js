@@ -79,7 +79,7 @@ export const priceChangeFormatter = value => {
     return value
 }
 
-// blur时完善输入的金额
+// blur时完善输入的金额 补零
 export const priceBlurFormatter = value => {
     if ('number' === typeof value) value = value.toString()
     if (!value) return value = '0.00'
@@ -119,3 +119,10 @@ export const formatDate = (date, format = 'yyyy-MM-dd HH:mm:ss 星期w') => {
         return obj[key]
     });
 }
+
+// 四舍五入，使用浏览器提供的接口(不兼容IE11)
+export const formatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: false, // 不使用千分位
+});

@@ -11,7 +11,7 @@ if (!userStore.token && tokenFromLoc) userStore.setToken(tokenFromLoc)
 /* End - 设置Token 到 pinia */
 
 /* Start 绑定Esc按键事件 */
-const backPages = ['goods', 'vip']
+const backPages = ['goods', 'vip', 'checkout']
 const escDown = event => {
   if (event.key !== 'Escape') return false
   let info = router.currentRoute.value

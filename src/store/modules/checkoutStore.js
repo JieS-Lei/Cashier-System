@@ -44,16 +44,19 @@ export const useCheckoutStore = defineStore('checkout', {
             currentGoods: null, // 选中的订单中的商品
             discounts: ['9.9', '9.5', '9', '5.5'], // 折扣配置
             reduces: ['5', '10', '15', '100'], // 减少金额配置
-            checkedDiscount: {
-                type: 'reduce', // discount折扣，reduce减少金额
-                index: 1
-            }
+            checkedDiscount: new Map([
+                ['reduce', '50'],
+                ['discount', '8.5']
+            ]),
+            // {
+            //     type: new Set(['reduce', 'discount']), // discount折扣，reduce减少金额
+            //     index: 1
+            // }
         }
     },
     actions: {
-        init_checkedDiscount() {
-            this.checkedDiscount.type = ''
-            this.checkedDiscount.index = -1
+        init_checkedDiscount(key) {
+            key && this.checkedDiscount.delete(key)
         }
     }
 })
