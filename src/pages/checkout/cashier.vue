@@ -33,12 +33,28 @@ const currentChange = (row, rowIndex) => {
     console.log(row, rowIndex);
 }
 
+const shortcutKeys = event => {
+    if (event.ctrlKey && event.key === 'b') remarkOpen()
+}
+document.addEventListener('keyup', shortcutKeys)
+onUnmounted(() => document.removeEventListener('keyup', shortcutKeys))
+
 // 备注内容
-const centerDialogVisible = ref(true) // 对话框显隐
+const remarksDialogVisible = ref(false) // 对话框显隐
 const remarks = reactive({
     content: '',
     copy: ''
 })
+// 备注对话框打开
+const remarkOpen = () => remarksDialogVisible.value = (remarks.copy = remarks.content, true)
+// 备注对话框提交
+const remarksSubmit = () => remarksDialogVisible.value = (remarks.content = remarks.copy, false)
+const handelRemarksKeyboard = event => {
+    event.stopPropagation()
+    if (event.key === 'Delete') remarks.copy = ''
+    if (event.ctrlKey && event.key === 'Enter') remarksSubmit()
+    return
+}
 
 </script>
 <template>
@@ -58,7 +74,7 @@ const remarks = reactive({
         <settementListVue class="cas-main" :list="order" :isVip="vipCheck" @current-change="currentChange" />
         <div class="cas-ps">
             <span>
-                <span class="tip remarks mx-1" @click="centerDialogVisible = (remarks.copy = remarks.content, true)">
+                <span class="tip remarks mx-1" @click="remarkOpen">
                     <template v-if="!remarks.content">
                         <el-icon size="14" style="margin-right:2px;vertical-align: bottom;">
                             <epEdit />
@@ -109,18 +125,16 @@ const remarks = reactive({
                 <el-button type="danger" size="large" style="margin-left: 0;">结算 (Space)</el-button>
             </div>
         </div>
-        <el-dialog v-model="centerDialogVisible" title="备注" width="40%" destroy-on-close center
-            @keyup.enter="centerDialogVisible = false">
+        <el-dialog v-model="remarksDialogVisible" title="备注" width="40%" destroy-on-close center
+            @keyup="handelRemarksKeyboard">
             <el-input v-model="remarks.copy" type="textarea" :rows="3" maxlength="50" resize="none" placeholder="请输入备注"
                 show-word-limit autofocus />
             <template #footer>
-                <el-button size="large" style="width: 105px;" @click="remarks.copy = ''">
+                <el-button size="large" type="info" style="width: 125px;" @click="remarks.copy = ''">
                     清空 Delete
                 </el-button>
-                <el-button type="primary" size="large"
-                    @click="centerDialogVisible = (remarks.content = remarks.copy, false)"
-                    style="width: 105px; margin-left: 50px;">
-                    添加 Enter
+                <el-button type="primary" size="large" @click="remarksSubmit" style="width: 125px; margin-left: 50px;">
+                    添加 Ctrl+Enter
                 </el-button>
             </template>
         </el-dialog>

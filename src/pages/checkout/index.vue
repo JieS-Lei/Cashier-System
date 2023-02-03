@@ -1,7 +1,12 @@
 <script setup>
 import { useRouter } from 'vue-router'
+
 import refundVue from './refund.vue'
 import cashierVue from './cashier.vue'
+import discountTabVue from './discount-tab.vue'
+import selectGoodsTabVue from './selectGoods-tab.vue'
+import createOrderEntryTabVue from './createOrderEntry-tab.vue'
+
 
 const router = useRouter()
 
@@ -12,13 +17,24 @@ const headerTabFn = event => {
     headerTabVal.value = !headerTabVal.value
 }
 document.addEventListener('keydown', event => {
-    if (event.ctrlKey && event.key === 'q') event.preventDefault()
+    if (event.altKey && event.key === 'q') event.preventDefault()
 })
 document.addEventListener('keyup', event => {
-    if (event.ctrlKey && event.key === 'q') headerTabVal.value = !headerTabVal.value
+    if (event.altKey && event.key === 'q') headerTabVal.value = !headerTabVal.value
 })
 
-
+const tabs = [{
+    label: '优惠折扣 [F4]',
+    component: discountTabVue
+}, {
+    label: '手选商品 [F5]',
+    component: selectGoodsTabVue
+}, {
+    label: '直接收款 [F6]',
+    component: createOrderEntryTabVue
+}]
+const activeIndex = ref(0)
+const handleTabClick = tabName => activeIndex.value = tabName
 </script>
 <template>
     <el-container class="container">
@@ -33,8 +49,8 @@ document.addEventListener('keyup', event => {
             </div>
             <span class="title" @click="headerTabFn">
                 <span :class="['mask', { 'on': !headerTabVal }]">蒙版</span>
-                <span :class="{ 'on': headerTabVal }">收银 [Ctrl+Q]</span>
-                <span :class="{ 'on': !headerTabVal }">退货 [Ctrl+Q]</span>
+                <span :class="{ 'on': headerTabVal }">收银 [Alt+Q]</span>
+                <span :class="{ 'on': !headerTabVal }">退货 [Alt+Q]</span>
             </span>
             <div class="box herder-right">
                 <el-button class="radius" plain size="large">设置</el-button>
@@ -42,13 +58,20 @@ document.addEventListener('keyup', event => {
         </el-header>
         <el-container class="shell pageBgColor">
             <el-aside class="aside" width="450px">
-                <component :is="headerTabVal ? cashierVue : refundVue"></component>
+                <KeepAlive>
+                    <component :is="headerTabVal ? cashierVue : refundVue"></component>
+                </KeepAlive>
             </el-aside>
-            <el-container>
-                <el-main class="main">
-
+            <el-container style="overflow: hidden;border: 1px solid var(--el-border-color);">
+                <el-main class="main" style="background-color: #fff;">
+                    <component :is="tabs[activeIndex].component"></component>
                 </el-main>
-                <el-footer>Footer</el-footer>
+                <el-footer class="footer">
+                    <span v-for="(tab, tabIndex) of tabs" :class="{ 'is-active': activeIndex === tabIndex }"
+                        @click="handleTabClick(tabIndex)">
+                        {{ tab.label }}
+                    </span>
+                </el-footer>
             </el-container>
         </el-container>
     </el-container>
@@ -114,5 +137,43 @@ document.addEventListener('keyup', event => {
     overflow: hidden;
     margin-right: 10px;
     background-color: #fff;
+}
+
+.footer {
+    --el-footer-height: 49px;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    background-color: var(--el-fill-color-light);
+    border-top: 1px solid var(--el-border-color-light);
+}
+
+.footer span {
+    margin-top: -1px;
+    padding: 8px;
+    padding: 0 25px;
+    height: 100%;
+    border: 1px solid transparent;
+    font-size: var(--el-font-size-base);
+    font-weight: bold;
+    line-height: var(--el-footer-height);
+    color: var(--el-text-color-secondary);
+    transition: all .3s cubic-bezier(.645, .045, .355, 1);
+}
+
+.footer span:first-child {
+    margin-left: -1px;
+}
+
+.footer span:hover {
+    color: var(--el-color-primary);
+    cursor: pointer;
+}
+
+.footer span.is-active {
+    color: var(--el-color-primary);
+    background-color: var(--el-bg-color-overlay);
+    border-right-color: var(--el-border-color);
+    border-left-color: var(--el-border-color);
 }
 </style>
