@@ -56,6 +56,8 @@ export const goodsApi = {
     vipRecharge: data => Post('cashier/recharge', data),
     // 获取用户余额改变记录
     getBalanceRecord: data => Post('cashier/getBalanceLog', data),
+    // 获取收银固定优惠参数
+    getCheckoutDiscount: () => Post('/cashier/getDiscountParam'),
 };
 
 // 文件上传

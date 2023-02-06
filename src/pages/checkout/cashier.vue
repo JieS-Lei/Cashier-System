@@ -1,16 +1,38 @@
 <script setup>
 import { storeToRefs } from 'pinia'
 import { useCheckoutStore } from '~/store/modules/checkoutStore'
-import { priceBlurFormatter, formatter } from '~/utils'
+import { formatter } from '~/utils'
 import settementListVue from '~/components/settlementList.vue'
 import { ref } from 'vue';
 
 const checkoutStore = useCheckoutStore()
 
-const { order, checkedDiscount } = storeToRefs(checkoutStore)
+const { order, checkedDiscount, notSmaCha } = storeToRefs(checkoutStore)
 
 // vip身份结算
 const vipCheck = ref(false)
+
+// 金额抹零
+const handleNotSmaCha = num => {
+    if (notSmaCha.value < 2) return num
+    num = num.toString()
+    let newNum = num.replace(/(\d+)\.(\d)(\d)/, (txt, $0, $1, $2) => {
+        let t = txt
+        if (notSmaCha.value == 2) t = `${$0}.${$1}0` // 抹分
+        else if (notSmaCha.value == 3) t = `${$0}.00` // 抹角
+        else if (notSmaCha.value == 4) {
+            if (+$2 < 5) t = `${$0}.${$1}0`
+            else if ((+$1 + 1) < 10) t = `${$0}.${+$1 + 1}0`
+            else t = `${+$0 + 1}.00`
+        } else if (notSmaCha.value == 5) {
+            if (+$2 === 0) t = `${$0}.${$1}0`
+            else if ((+$1 + 1) < 10) t = `${$0}.${+$1 + 1}0`
+            else t = `${+$0 + 1}.00`
+        }
+        return t
+    })
+    return newNum
+}
 
 // 订单金额数量合计
 const orderSettlement = computed(() => {
@@ -24,7 +46,8 @@ const orderSettlement = computed(() => {
         if (key === 'reduce') peyObj['receivable'] = +formatter.format(peyObj['receivable'] - +value)
     });
     peyObj.receivable = formatter.format(Math.max(0, peyObj.receivable))
-    peyObj['reduce'] = formatter.format(peyObj.count - peyObj.receivable)
+    peyObj.receivable = handleNotSmaCha(peyObj.receivable)
+    peyObj['reduce'] = formatter.format(Math.max(0, peyObj.count - peyObj.receivable))
     return peyObj
 })
 
@@ -33,6 +56,7 @@ const currentChange = (row, rowIndex) => {
     console.log(row, rowIndex);
 }
 
+// 打开备注快捷键
 const shortcutKeys = event => {
     if (event.ctrlKey && event.key === 'b') remarkOpen()
 }
@@ -85,11 +109,11 @@ const handelRemarksKeyboard = event => {
                     </template>
                 </span>
                 <el-tag v-if="checkedDiscount.has('discount')" type="danger" class="mx-1" size="large" closable
-                    @close="checkoutStore.init_checkedDiscount('discount')">
+                    @close="checkoutStore.delete_checkedDiscount('discount')">
                     {{ checkedDiscount.get('discount') }}折
                 </el-tag>
                 <el-tag v-if="checkedDiscount.has('reduce')" type="warning" class="mx-1" size="large" closable
-                    @close="checkoutStore.init_checkedDiscount('reduce')">
+                    @close="checkoutStore.delete_checkedDiscount('reduce')">
                     -{{ checkedDiscount.get('reduce') }}元
                 </el-tag>
             </span>
@@ -110,7 +134,9 @@ const handelRemarksKeyboard = event => {
                 </li>
                 <li class="cell">
                     <span class="label">优惠：</span>
-                    <span class="content red f-s-2">￥{{ orderSettlement.reduce }}</span>
+                    <span class="content red f-s-2">
+                        ￥{{ orderSettlement.reduce }}
+                    </span>
                 </li>
                 <li class="cell">
                     <span class="label">应收：</span>

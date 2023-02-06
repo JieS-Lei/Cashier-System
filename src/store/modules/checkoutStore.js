@@ -34,7 +34,7 @@ export const useCheckoutStore = defineStore('checkout', {
             }, {
                 goods_name: '旺旺牛奶糖',
                 goods_sku: {
-                    goods_price: '1.00',
+                    goods_price: '1.10',
                     stock_num: '25',
                     goods_vip_price: '0.85',
                     goods_cost_price: '0.50'
@@ -42,20 +42,13 @@ export const useCheckoutStore = defineStore('checkout', {
                 num: 15
             }], // 订单中的商品
             currentGoods: null, // 选中的订单中的商品
-            discounts: ['9.9', '9.5', '9', '5.5'], // 折扣配置
-            reduces: ['5', '10', '15', '100'], // 减少金额配置
-            checkedDiscount: new Map([
-                ['reduce', '50'],
-                ['discount', '8.5']
-            ]),
-            // {
-            //     type: new Set(['reduce', 'discount']), // discount折扣，reduce减少金额
-            //     index: 1
-            // }
+            onlyOneDiscount: false,
+            checkedDiscount: new Map(), // 
+            notSmaCha: 1 // 抹零方式：1-不抹零、2-抹分、3-抹角、4-四舍五入到角、5-逢分进角
         }
     },
     actions: {
-        init_checkedDiscount(key) {
+        delete_checkedDiscount(key) {
             key && this.checkedDiscount.delete(key)
         }
     }

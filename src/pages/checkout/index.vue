@@ -37,44 +37,46 @@ const activeIndex = ref(0)
 const handleTabClick = tabName => activeIndex.value = tabName
 </script>
 <template>
-    <el-container class="container">
-        <el-header class="header">
-            <div class="box">
-                <el-button size="large" text @click="router.back()">
-                    <el-icon>
-                        <epArrowLeftBold />
-                    </el-icon>
-                    返回 [ESC]
-                </el-button>
-            </div>
-            <span class="title" @click="headerTabFn">
-                <span :class="['mask', { 'on': !headerTabVal }]">蒙版</span>
-                <span :class="{ 'on': headerTabVal }">收银 [Alt+Q]</span>
-                <span :class="{ 'on': !headerTabVal }">退货 [Alt+Q]</span>
-            </span>
-            <div class="box herder-right">
-                <el-button class="radius" plain size="large">设置</el-button>
-            </div>
-        </el-header>
-        <el-container class="shell pageBgColor">
-            <el-aside class="aside" width="450px">
-                <KeepAlive>
-                    <component :is="headerTabVal ? cashierVue : refundVue"></component>
-                </KeepAlive>
-            </el-aside>
-            <el-container style="overflow: hidden;border: 1px solid var(--el-border-color);">
-                <el-main class="main" style="background-color: #fff;">
-                    <component :is="tabs[activeIndex].component"></component>
-                </el-main>
-                <el-footer class="footer">
-                    <span v-for="(tab, tabIndex) of tabs" :class="{ 'is-active': activeIndex === tabIndex }"
-                        @click="handleTabClick(tabIndex)">
-                        {{ tab.label }}
-                    </span>
-                </el-footer>
+    <el-scrollbar>
+        <el-container class="container">
+            <el-header class="header">
+                <div class="box">
+                    <el-button size="large" text @click="router.back()">
+                        <el-icon>
+                            <epArrowLeftBold />
+                        </el-icon>
+                        返回 [ESC]
+                    </el-button>
+                </div>
+                <span class="title" @click="headerTabFn">
+                    <span :class="['mask', { 'on': !headerTabVal }]">蒙版</span>
+                    <span :class="{ 'on': headerTabVal }">收银 [Alt+Q]</span>
+                    <span :class="{ 'on': !headerTabVal }">退货 [Alt+Q]</span>
+                </span>
+                <div class="box herder-right">
+                    <el-button class="radius" plain size="large">设置</el-button>
+                </div>
+            </el-header>
+            <el-container class="shell pageBgColor">
+                <el-aside class="aside" width="450px">
+                    <KeepAlive>
+                        <component :is="headerTabVal ? cashierVue : refundVue"></component>
+                    </KeepAlive>
+                </el-aside>
+                <el-container style="overflow: hidden;border: 1px solid var(--el-border-color);">
+                    <el-main class="main" style="background-color: #fff;">
+                        <component :is="tabs[activeIndex].component"></component>
+                    </el-main>
+                    <el-footer class="footer">
+                        <span v-for="(tab, tabIndex) of tabs" :class="{ 'is-active': activeIndex === tabIndex }"
+                            @click="handleTabClick(tabIndex)">
+                            {{ tab.label }}
+                        </span>
+                    </el-footer>
+                </el-container>
             </el-container>
         </el-container>
-    </el-container>
+    </el-scrollbar>
 </template>
 <style scoped>
 @import url(~/assets/style/common.css);
