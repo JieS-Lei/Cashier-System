@@ -5,9 +5,9 @@ import { useGoodsStore } from '~/store/modules/goodsStore'
 import { debounce, priceChangeFormatter as priceFormatter, priceBlurFormatter } from '~/utils'
 
 // 组件
-import addGoodsVue from '../../components/addGoods.vue';
+import addGoodsVue from './addGoods.vue';
 import reviseTypeVue from '../../components/reviseType.vue';
-import setUnitVue from '../../components/setUnit.vue';
+import setUnitVue from './setUnit.vue';
 import delGoodsToTypeVue from '../../components/delGoodsToType.vue';
 import { ElMessage } from 'element-plus';
 

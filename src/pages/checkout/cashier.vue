@@ -80,6 +80,17 @@ const handelRemarksKeyboard = event => {
     return
 }
 
+const elTagOption = {
+    'discount': {
+        type: 'danger',
+        unit: '折'
+    },
+    'reduce': {
+        type: 'warning',
+        unit: '元'
+    }
+}
+
 </script>
 <template>
     <div class="cas">
@@ -108,13 +119,9 @@ const handelRemarksKeyboard = event => {
                         {{ remarks.content }}
                     </template>
                 </span>
-                <el-tag v-if="checkedDiscount.has('discount')" type="danger" class="mx-1" size="large" closable
-                    @close="checkoutStore.delete_checkedDiscount('discount')">
-                    {{ checkedDiscount.get('discount') }}折
-                </el-tag>
-                <el-tag v-if="checkedDiscount.has('reduce')" type="warning" class="mx-1" size="large" closable
-                    @close="checkoutStore.delete_checkedDiscount('reduce')">
-                    -{{ checkedDiscount.get('reduce') }}元
+                <el-tag v-for="[key, val] in checkedDiscount" :type="elTagOption[key].type" class="mx-1" size="large"
+                    closable @close="checkoutStore.delete_checkedDiscount(key)">
+                    {{ key=== 'reduce' ? '-' : ''}}{{ val+ elTagOption[key].unit }}
                 </el-tag>
             </span>
             <el-check-tag :checked="vipCheck" size="large" @change="vipCheck = !vipCheck">
@@ -134,9 +141,7 @@ const handelRemarksKeyboard = event => {
                 </li>
                 <li class="cell">
                     <span class="label">优惠：</span>
-                    <span class="content red f-s-2">
-                        ￥{{ orderSettlement.reduce }}
-                    </span>
+                    <span class="content red f-s-2">￥{{ orderSettlement.reduce }}</span>
                 </li>
                 <li class="cell">
                     <span class="label">应收：</span>

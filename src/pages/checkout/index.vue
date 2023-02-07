@@ -65,7 +65,9 @@ const handleTabClick = tabName => activeIndex.value = tabName
                 </el-aside>
                 <el-container style="overflow: hidden;border: 1px solid var(--el-border-color);">
                     <el-main class="main" style="background-color: #fff;">
-                        <component :is="tabs[activeIndex].component"></component>
+                        <KeepAlive>
+                            <component :is="tabs[activeIndex].component"></component>
+                        </KeepAlive>
                     </el-main>
                     <el-footer class="footer">
                         <span v-for="(tab, tabIndex) of tabs" :class="{ 'is-active': activeIndex === tabIndex }"
