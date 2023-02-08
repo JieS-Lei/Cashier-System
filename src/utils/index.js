@@ -80,12 +80,12 @@ export const priceChangeFormatter = value => {
 }
 
 // blur时完善输入的金额 补零
-export const priceBlurFormatter = value => {
+export const priceBlurFormatter = (value, len = 2) => {
     if ('number' === typeof value) value = value.toString()
-    if (!value) return value = '0.00'
+    if (!value) return value = `0.${'0'.repeat(len)}`
     value = value.replace(/^0(?=[0-9])/, '')
-    if (!value.includes('.')) value += '.00'
-    else value += "0".repeat(Math.max(2 - value.split('.')[1]?.length, 0))
+    if (!value.includes('.')) value = `${value}.${'0'.repeat(len)}`
+    else value += "0".repeat(Math.max(len - value.split('.')[1]?.length, 0))
     return value
 }
 

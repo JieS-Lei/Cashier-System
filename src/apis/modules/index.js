@@ -57,7 +57,9 @@ export const goodsApi = {
     // 获取用户余额改变记录
     getBalanceRecord: data => Post('cashier/getBalanceLog', data),
     // 获取收银固定优惠参数
-    getCheckoutDiscount: () => Post('/cashier/getDiscountParam'),
+    getCheckoutDiscount: () => Post('cashier/getDiscountParam'),
+    // 修改收银固定优惠参数
+    setCheckoutDiscount: data => Post('cashier/updateDiscountParam', data),
 };
 
 // 文件上传

@@ -17,7 +17,6 @@ const handelKeyClick = event => {
 <style scoped>
 .keyboard {
     --keyboard-height: 55px;
-    padding-top: 20px;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(3, var(--keyboard-height));

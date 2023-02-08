@@ -17,7 +17,7 @@ const escDown = event => {
   let info = router.currentRoute.value
   if (backPages.includes((info.name || '').split(/(?=[A-Z])/)[0])) router.back()
 }
-document.documentElement.addEventListener('keyup', escDown)
+document.documentElement.addEventListener('keyup', escDown, null)
 onBeforeUnmount(() => {
   document.documentElement.removeEventListener('keyup', escDown)
 })
