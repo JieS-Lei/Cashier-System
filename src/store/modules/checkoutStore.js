@@ -50,6 +50,10 @@ export const useCheckoutStore = defineStore('checkout', {
     actions: {
         delete_checkedDiscount(key) {
             key && this.checkedDiscount.delete(key)
+        },
+        pushIntoOrder(goods) {
+            if (null == goods || !goods?.goods_id) return
+            this.order.push(goods)
         }
     }
 })
