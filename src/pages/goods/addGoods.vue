@@ -76,7 +76,7 @@ watch(rowForm, newVal => {
     form.image_id = imageObj.image_id
     fileList.value.push({
       name: imageObj.file_name,
-      url: imageObj.file_path
+      url: `${imageObj.file_url}/${imageObj.file_name}`
     })
   }
 })

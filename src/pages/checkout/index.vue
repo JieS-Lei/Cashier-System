@@ -33,7 +33,7 @@ const tabs = [{
     label: '直接收款 [F6]',
     component: createOrderEntryTabVue
 }]
-const activeIndex = ref(0)
+const activeIndex = ref(1)
 const handleTabClick = tabName => activeIndex.value = tabName
 </script>
 <template>
