@@ -2,17 +2,17 @@
 const emit = defineEmits(['current-change'])
 const props = defineProps({
     list: {
-        type: Array,
+        type: Map,
         required: true
     },
     isVip: Boolean
 })
 const goodsPriceKey = computed(() => props.isVip ? 'goods_vip_price' : 'goods_price')
 const currentRow = ref(-1)
-const rowClick = (row, index) => {
-    if (currentRow.value === index) return
-    currentRow.value = index
-    emit('current-change', row, index)
+const rowClick = row => {
+    if (currentRow.value === row[0]) return
+    currentRow.value = row[0]
+    emit('current-change', row)
 }
 
 </script>
@@ -26,25 +26,28 @@ const rowClick = (row, index) => {
             <span>小计</span>
         </div>
         <el-scrollbar style="flex: 1;">
-            <template v-if="list.length">
-                <div :class="['row', { 'current-row': currentRow === index, 'error-row': (row.goods_sku.stock_num < row.num) }, { 'warning-row': +row.goods_sku[goodsPriceKey] < +row.goods_sku.goods_cost_price }]"
-                    v-for="(row, index) of list" @click="rowClick(row, index)">
+            <template v-if="list.size">
+                <div :class="['row', { 'current-row': currentRow === row[0], 'error-row': (row[1].goods_sku.stock_num < row[1].num) }, { 'warning-row': +row[1].goods_sku[goodsPriceKey] < +row[1].goods_sku.goods_cost_price }]"
+                    v-for="(row, index) of list" @click="rowClick(row)">
                     <div class="content">
                         <span>{{ index+ 1 }}</span>
-                        <span>{{ row.goods_name }}</span>
-                        <span>{{ row.goods_sku[goodsPriceKey] }}</span>
-                        <span>{{ row.num }}</span>
+                        <span>{{ row[1].goods_name }}</span>
+                        <span>{{ row[1].goods_sku[goodsPriceKey] }}</span>
+                        <span>{{ row[1].num }}</span>
                         <span>
-                            <el-tooltip :disabled="`${row.goods_sku[goodsPriceKey] * row.num}`.length <= 9"
-                                effect="dark" :content="`${row.goods_sku[goodsPriceKey] * row.num}`" placement="top">
-                                {{ row.goods_sku[goodsPriceKey] * row.num }}
+                            <el-tooltip :disabled="`${row[1].goods_sku[goodsPriceKey] * row[1].num}`.length <= 9"
+                                effect="dark" :content="`${row[1].goods_sku[goodsPriceKey] * row[1].num}`"
+                                placement="top">
+                                {{ row[1].goods_sku[goodsPriceKey] * row[1].num }}
                             </el-tooltip>
                         </span>
                     </div>
                     <div class="error">
-                        <span v-if="+row.goods_sku[goodsPriceKey] < +row.goods_sku.goods_cost_price"
+                        <span v-if="+row[1].goods_sku[goodsPriceKey] < +row[1].goods_sku.goods_cost_price"
                             style="color: var(--el-color-warning);">售价小于进价</span>
-                        <span v-if="row.goods_sku.stock_num < row.num">库存不足，剩余{{ row.goods_sku.stock_num }}件</span>
+                        <span v-if="row[1].goods_sku.stock_num < row[1].num">库存不足，剩余{{
+                            row[1].goods_sku.stock_num
+                        }}件</span>
                     </div>
                 </div>
             </template>

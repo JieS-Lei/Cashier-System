@@ -126,3 +126,24 @@ export const formatter = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 2,
     useGrouping: false, // 不使用千分位
 });
+
+// 处理商品类型数据
+export const handleGoodsTypeObj = (target, alias = 0, parentId) => {
+    const result = []
+    for (const key in target) {
+        if (Object.hasOwnProperty.call(target, key)) {
+            const element = target[key];
+            const obj = {
+                label: element.name,
+                id: element.category_id
+            }
+            if (alias) obj['text'] = 'level' + alias
+            if (parentId) obj['parentId'] = parentId
+            if (Array.isArray(element.child)) {
+                obj['children'] = handleGoodsTypeObj(element.child, alias + 1, obj.id)
+            } else if (alias <= 1) obj['children'] = []
+            result.push(obj)
+        }
+    }
+    return result
+}

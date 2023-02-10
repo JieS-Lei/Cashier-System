@@ -36,10 +36,14 @@ const handleNotSmaCha = num => {
 
 // 订单金额数量合计
 const orderSettlement = computed(() => {
-    let peyObj = order.value.reduce((acc, cur) => ({
-        num: acc.num + cur.num,
-        count: +formatter.format(acc.count + (+cur.goods_sku[vipCheck.value ? 'goods_vip_price' : 'goods_price'] * cur.num))
-    }), { num: 0, count: 0 })
+    let orderToArray = Array.from(order.value)
+    let peyObj = orderToArray.reduce((acc, cur) => {
+        cur = cur[1]
+        return {
+            num: acc.num + cur.num,
+            count: +formatter.format(acc.count + (+cur.goods_sku[vipCheck.value ? 'goods_vip_price' : 'goods_price'] * cur.num))
+        }
+    }, { num: 0, count: 0 })
     peyObj['receivable'] = peyObj.count
     checkedDiscount.value.forEach((value, key) => {
         if (key === 'discount') peyObj['receivable'] = +formatter.format(peyObj['receivable'] * (+value / 10))

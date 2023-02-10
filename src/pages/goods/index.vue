@@ -2,7 +2,7 @@
 import { useRouter } from 'vue-router'
 import { apis } from '~/apis'
 import { useGoodsStore } from '~/store/modules/goodsStore'
-import { debounce, priceChangeFormatter as priceFormatter, priceBlurFormatter } from '~/utils'
+import { debounce, priceChangeFormatter as priceFormatter, priceBlurFormatter, handleGoodsTypeObj } from '~/utils'
 
 // 组件
 import addGoodsVue from './addGoods.vue';
@@ -246,33 +246,12 @@ watch(checkedType, () => {
     else currentPage.value = 1
 })
 
-// 处理商品类型数据
-const handleObj = (target, alias = 0, parentId) => {
-    const result = []
-    for (const key in target) {
-        if (Object.hasOwnProperty.call(target, key)) {
-            const element = target[key];
-            const obj = {
-                label: element.name,
-                id: element.category_id
-            }
-            if (alias) obj['text'] = 'level' + alias
-            if (parentId) obj['parentId'] = parentId
-            if (Array.isArray(element.child)) {
-                obj['children'] = handleObj(element.child, alias + 1, obj.id)
-            } else if (alias <= 1) obj['children'] = []
-            result.push(obj)
-        }
-    }
-    return result
-}
-
 // 请求商品类型数据
 const getTypeList = async () => {
     typeLoading.value = true
     let [error, { data, code }] = await apis.getTypes()
-    if (error || 1 !== code) return loading.value = false
-    if (null != data && 'object' === typeof data) typeList.value = handleObj(data, 1)
+    if (error || 1 !== code) return typeLoading.value = false
+    if (null != data && 'object' === typeof data) typeList.value = handleGoodsTypeObj(data, 1)
     goodsStore.setTypeList(typeList.value) //pinia
     typeLoading.value = false
 }
@@ -533,6 +512,7 @@ const autoBCardFn = async () => {
 </template>
 <style scoped>
 @import url(~/assets/style/common.css);
+@import url(~/assets/style/goodsTypes.css);
 
 .main .top .select {
     width: 130px;
@@ -618,72 +598,6 @@ const autoBCardFn = async () => {
     font-weight: bolder;
     color: var(--el-color-white);
     /* background-color: var(--el-color-primary); */
-}
-
-.content .type {
-    background-color: var(--el-fill-color-blank);
-}
-
-.content .type>.item {
-    padding-left: 15px;
-    font-size: var(--el-font-size-small);
-    background-color: var(--el-fill-color-blank);
-}
-
-.content .type .item {
-    border-top: 1px solid var(--el-border-color-lighter);
-    height: 48px;
-    line-height: 48px;
-    color: var(--el-text-color-primary);
-    cursor: pointer;
-    outline: 0;
-    transition: all .3s;
-}
-
-.type .overflow {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.content .type .nochildren:deep(.el-collapse-item__arrow) {
-    visibility: hidden;
-}
-
-.content .type .nochildren:deep(.el-collapse-item__wrap) {
-    display: none;
-}
-
-.content .type .item:hover,
-.content .type:deep(.el-collapse-item__header):hover {
-    color: var(--el-color-primary);
-}
-
-.content .type:deep(.el-collapse .el-collapse-item__header) {
-    padding-left: 15px;
-    text-align: center;
-    transition: all .3s;
-}
-
-.content .type:deep(.el-collapse .el-collapse-item__content) {
-    padding-bottom: 0;
-    text-align: center;
-}
-
-.content .type:deep(.el-collapse .el-collapse-item__content div) {
-    border-color: #fff;
-    background-color: #e2ecfe;
-}
-
-.type .item.active,
-.type .active:deep(.el-collapse-item__header) {
-    font-weight: 600;
-    color: var(--el-color-primary) !important;
-    background-color: rgba(64, 158, 255, .1);
-}
-
-.type .el-collapse:deep(.el-collapse-item__content .active) {
-    background-color: rgb(155 204 255 / 50%) !important;
 }
 </style>
 <style>
