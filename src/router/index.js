@@ -1,11 +1,12 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
 import { useUserStore } from '~/store/modules/userStore'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 
 const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHashHistory(),
+    // mode: 'hash',
     routes
 })
 
