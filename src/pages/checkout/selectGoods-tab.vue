@@ -46,9 +46,10 @@ onMounted(() => load())
 const handleGoodsClick = event => {
     let key = event.target.getAttribute('goodskey')
     if (!key) return
-    goodsList.value[key].num = 1
-    checkoutStore.pushIntoOrder(goodsList.value[key])
-
+    let goods = goodsList.value[key]
+    goods.num = 1 // 商品数量
+    goods.oneDis = 100 // 单个物品折扣（百分比）
+    checkoutStore.pushIntoOrder(goods)
 }
 const noMore = computed(() => (page.current - 1) * page.pageSize >= page.total)
 const disabled = computed(() => loading.value || noMore.value)

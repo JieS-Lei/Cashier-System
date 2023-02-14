@@ -7,10 +7,9 @@ import { ref } from 'vue';
 
 const checkoutStore = useCheckoutStore()
 
-const { order, checkedDiscount, notSmaCha } = storeToRefs(checkoutStore)
+const { order, checkedDiscount, notSmaCha, currentGoods, vipCheck } = storeToRefs(checkoutStore)
 
-// vip身份结算
-const vipCheck = ref(false)
+const emits = defineEmits(['current-change'])
 
 // 金额抹零
 const handleNotSmaCha = num => {
@@ -56,8 +55,9 @@ const orderSettlement = computed(() => {
 })
 
 // 订单数据单条选中
-const currentChange = (row, rowIndex) => {
-    console.log(row, rowIndex);
+const currentChange = row => {
+    currentGoods.value = row
+    emits('current-change', row)
 }
 
 // 打开备注快捷键
@@ -110,7 +110,8 @@ const elTagOption = {
             </el-button>
         </header>
         <el-divider style="margin: 5px 0;" />
-        <settementListVue class="cas-main" :list="order" :isVip="vipCheck" @current-change="currentChange" />
+        <settementListVue class="cas-main" :list="order" :isVip="vipCheck" :currentId="currentGoods[0] ?? ''"
+            @current-change="currentChange" />
         <div class="cas-ps">
             <span>
                 <span class="tip remarks mx-1" @click="remarkOpen">

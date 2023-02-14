@@ -127,7 +127,7 @@ export const formatter = new Intl.NumberFormat('en-US', {
     useGrouping: false, // 不使用千分位
 });
 
-// 处理商品类型数据
+// 格式化处理商品类型数据
 export const handleGoodsTypeObj = (target, alias = 0, parentId) => {
     const result = []
     for (const key in target) {

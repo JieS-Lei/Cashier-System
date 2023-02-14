@@ -1,14 +1,16 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { useCheckoutStore } from '~/store/modules/checkoutStore'
 
 import refundVue from './refund.vue'
 import cashierVue from './cashier.vue'
 import discountTabVue from './discount-tab.vue'
 import selectGoodsTabVue from './selectGoods-tab.vue'
 import createOrderEntryTabVue from './createOrderEntry-tab.vue'
-
+import goodsInfoVue from './goods-info.vue'
 
 const router = useRouter()
+const checkoutStore = useCheckoutStore()
 
 const headerTabVal = ref(true)
 const headerTabFn = event => {
@@ -34,7 +36,14 @@ const tabs = [{
     component: createOrderEntryTabVue
 }]
 const activeIndex = ref(1)
-const handleTabClick = tabName => activeIndex.value = tabName
+const handleTabClick = tabName => {
+    activeIndex.value = tabName
+    checkoutStore.clearCurrentGoods()
+}
+
+const fn = row => {
+    activeIndex.value = 3
+}
 </script>
 <template>
     <el-scrollbar>
@@ -60,13 +69,13 @@ const handleTabClick = tabName => activeIndex.value = tabName
             <el-container class="shell pageBgColor">
                 <el-aside class="aside" width="450px">
                     <KeepAlive>
-                        <component :is="headerTabVal ? cashierVue : refundVue"></component>
+                        <component :is="headerTabVal ? cashierVue : refundVue" @current-change="fn"></component>
                     </KeepAlive>
                 </el-aside>
                 <el-container style="overflow: hidden;border: 1px solid var(--el-border-color);">
                     <el-main class="main" style="background-color: #fff;">
-                        <KeepAlive>
-                            <component :is="tabs[activeIndex].component"></component>
+                        <KeepAlive exclude="goods-info">
+                            <component :is="tabs[activeIndex]?.component ?? goodsInfoVue"></component>
                         </KeepAlive>
                     </el-main>
                     <el-footer class="footer">

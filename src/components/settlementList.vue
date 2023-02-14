@@ -1,19 +1,29 @@
 <script setup>
+import { watch } from 'vue';
+import { priceBlurFormatter } from '~/utils'
+
 const emit = defineEmits(['current-change'])
 const props = defineProps({
     list: {
         type: Map,
         required: true
     },
-    isVip: Boolean
+    isVip: Boolean,
+    currentId: [String, Number],
 })
+
 const goodsPriceKey = computed(() => props.isVip ? 'goods_vip_price' : 'goods_price')
+
 const currentRow = ref(-1)
 const rowClick = row => {
     if (currentRow.value === row[0]) return
     currentRow.value = row[0]
     emit('current-change', row)
 }
+
+watch(() => props.currentId, newVal => {
+    if (!newVal) currentRow.value = -1
+})
 
 </script>
 <template>
@@ -32,7 +42,12 @@ const rowClick = row => {
                     <div class="content">
                         <span>{{ index+ 1 }}</span>
                         <span>{{ row[1].goods_name }}</span>
-                        <span>{{ row[1].goods_sku[goodsPriceKey] }}</span>
+                        <span v-if="row[1].oneDis >= 100">{{ row[1].goods_sku[goodsPriceKey] }}</span>
+                        <span v-else>
+                            <b>{{ priceBlurFormatter(row[1].goods_sku[goodsPriceKey] * (row[1].oneDis / 100)) }}</b>
+                            <br>
+                            <s class="line">{{ row[1].goods_sku[goodsPriceKey] }}</s>
+                        </span>
                         <span>{{ row[1].num }}</span>
                         <span>
                             <el-tooltip :disabled="`${row[1].goods_sku[goodsPriceKey] * row[1].num}`.length <= 9"
@@ -146,5 +161,10 @@ const rowClick = row => {
 .table-title>span:nth-child(2) {
     flex: 1;
     text-align: left;
+}
+
+.row .content .line {
+    font-size: 12px;
+    color: var(--el-text-color-disabled);
 }
 </style>
