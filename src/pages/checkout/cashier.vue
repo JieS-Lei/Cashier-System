@@ -40,7 +40,7 @@ const orderSettlement = computed(() => {
         cur = cur[1]
         return {
             num: acc.num + cur.num,
-            count: +formatter.format(acc.count + (+cur.goods_sku[vipCheck.value ? 'goods_vip_price' : 'goods_price'] * cur.num))
+            count: +formatter.format(acc.count + (+(cur.diyPrice ?? cur.goods_sku[vipCheck.value ? 'goods_vip_price' : 'goods_price']) * cur.num))
         }
     }, { num: 0, count: 0 })
     peyObj['receivable'] = peyObj.count

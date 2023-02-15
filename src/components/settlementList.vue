@@ -42,23 +42,33 @@ watch(() => props.currentId, newVal => {
                     <div class="content">
                         <span>{{ index+ 1 }}</span>
                         <span>{{ row[1].goods_name }}</span>
-                        <span v-if="row[1].oneDis >= 100">{{ row[1].goods_sku[goodsPriceKey] }}</span>
+                        <span v-if="row[1].oneDis >= 100">
+                            {{ row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey] }}
+                        </span>
                         <span v-else>
-                            <b>{{ priceBlurFormatter(row[1].goods_sku[goodsPriceKey] * (row[1].oneDis / 100)) }}</b>
+                            <b>
+                                {{ priceBlurFormatter((row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey])
+                                * (row[1].oneDis / 100)) }}
+                            </b>
                             <br>
-                            <s class="line">{{ row[1].goods_sku[goodsPriceKey] }}</s>
+                            <s class="line">
+                                {{ row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey] }}
+                            </s>
                         </span>
                         <span>{{ row[1].num }}</span>
                         <span>
-                            <el-tooltip :disabled="`${row[1].goods_sku[goodsPriceKey] * row[1].num}`.length <= 9"
-                                effect="dark" :content="`${row[1].goods_sku[goodsPriceKey] * row[1].num}`"
+                            <el-tooltip
+                                :disabled="`${(row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey]) * row[1].num}`.length <= 9"
+                                effect="dark"
+                                :content="`${(row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey]) * row[1].num}`"
                                 placement="top">
-                                {{ row[1].goods_sku[goodsPriceKey] * row[1].num }}
+                                {{ (row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey]) * row[1].num }}
                             </el-tooltip>
                         </span>
                     </div>
                     <div class="error">
-                        <span v-if="+row[1].goods_sku[goodsPriceKey] < +row[1].goods_sku.goods_cost_price"
+                        <span
+                            v-if="+(row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey]) < +row[1].goods_sku.goods_cost_price"
                             style="color: var(--el-color-warning);">售价小于进价</span>
                         <span v-if="row[1].goods_sku.stock_num < row[1].num">库存不足，剩余{{
                             row[1].goods_sku.stock_num

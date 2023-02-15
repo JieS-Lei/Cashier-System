@@ -10,8 +10,7 @@ const props = defineProps({
   show: {
     type: Boolean,
     required: true
-  },
-  rowForm: Object
+  }
 })
 const store = useGoodsStore()
 const { checkedType, checkedUnit, rowForm } = storeToRefs(store)
@@ -25,7 +24,7 @@ const defaultFrom = {
   goods_cost_price: '0.00', // 进价
   goods_vip_price: '0.00', // vip价格
   goods_unit: computed(() => checkedUnit.value.unit_id ?? ''), // 商品单位
-  category_id: checkedType.value.id ?? '', // 商品分类id
+  category_id: '', // 商品分类id
   stock_num: 0, // 库存
   goods_production_date: '', // 生产日期
   goods_expiration_day: '', // 保质期
@@ -56,7 +55,7 @@ watch(rowForm, newVal => {
   form.stock_num = rowForm.value.goods_sku.stock_num
   form.goods_expiration_day = rowForm.value.goods_sku.goods_expiration_day
   let unitId = rowForm.value.goods_sku.goods_unit,
-    typeObj = rowForm.value.category ?? {},
+    typeObj = rowForm.value.category[0] ?? {},
     date = rowForm.value.goods_sku.goods_production_date,
     imageObj = rowForm.value.image[0]
   if (date) {
@@ -182,7 +181,6 @@ const submit = (isClose, isUpdata) => {
     if (form.goods_production_date) options.goods_production_date = form.goods_production_date.getTime() / 1000
     // 修改商品传入id
     if (isUpdata) options['goods_id'] = rowForm.value.goods_id
-    console.log(options);
     let [error, { code }] = await apis[isUpdata ? 'updataGoods' : 'addGoods'](options)
     if (error || 1 !== code) return ElMessage(`商品${isUpdata ? '修改' : '新增'}失败`)
     ElMessage.success(`商品${isUpdata ? '修改' : '新增'}成功`)
@@ -216,7 +214,7 @@ const close = () => {
   clearFrom() // 清除选中数据
 }
 
-// 修改商品信息
+// 删除商品
 const remove = () => {
   ElMessageBox({
     message: '是否删除商品',

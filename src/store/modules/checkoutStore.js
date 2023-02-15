@@ -19,7 +19,6 @@ export const useCheckoutStore = defineStore('checkout', {
         pushIntoOrder(goods) {
             if (null == goods || !goods?.goods_id) return
             if (this.order.has(goods.goods_id)) goods.num = this.order.get(goods.goods_id).num += 1
-            console.log(goods);
             this.order.set(goods.goods_id, { ...goods })
         },
         clearCurrentGoods() {

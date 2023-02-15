@@ -209,7 +209,7 @@ const setTypeFn = () => {
     isSetType = true
     reviseTypeVisible.value = true
 }
-// 监听选中
+// 监听商品类型选中
 watch(() => goodsStore.checkedType, async newVal => {
     if (!isSetType) return
     if (newVal.id) {
@@ -265,7 +265,7 @@ const setUnitFn = () => {
     isSetUnit = true
     setUnitVisible.value = true
 }
-// 监听选中
+// 监听商品单位选中
 watch(() => goodsStore.checkedUnit, async newVal => {
     if (!isSetUnit) return
     if (newVal.unit_id) {
