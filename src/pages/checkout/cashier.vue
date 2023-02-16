@@ -40,9 +40,10 @@ const orderSettlement = computed(() => {
         cur = cur[1]
         return {
             num: acc.num + cur.num,
-            count: +formatter.format(acc.count + (+(cur.diyPrice ?? cur.goods_sku[vipCheck.value ? 'goods_vip_price' : 'goods_price']) * cur.num))
+            count: +formatter.format(acc.count + (+formatter.format((cur.diyPrice ?? cur.goods_sku[vipCheck.value ? 'goods_vip_price' : 'goods_price']) * (cur.oneDis / 100)) * cur.num))
         }
     }, { num: 0, count: 0 })
+    peyObj.count = formatter.format(peyObj.count)
     peyObj['receivable'] = peyObj.count
     checkedDiscount.value.forEach((value, key) => {
         if (key === 'discount') peyObj['receivable'] = +formatter.format(peyObj['receivable'] * (+value / 10))

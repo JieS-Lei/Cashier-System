@@ -70,8 +70,9 @@ export const throttle = function throttle(func, wait) {
 
 // 金额输入框格式化函数
 export const priceChangeFormatter = value => {
+    value = `${value}`
     // 删除不合规的字符
-    value = value.replace(/[^\d\.]|(?<=^0)0|(?<=\.\d{2}).*|(?<=\.\d*)\./g, '')
+    value = value.replace(/[^\d\.]|^0(?=\d+)|(?<=\.\d{2}).*|(?<=\.\d*)\./g, '')
     // 点开头自动补0
     value = value.replace(/^\./, '0.')
     // value = value.length

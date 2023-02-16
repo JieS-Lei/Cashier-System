@@ -1,6 +1,6 @@
 <script setup>
 import { watch } from 'vue';
-import { priceBlurFormatter } from '~/utils'
+import { priceBlurFormatter, formatter } from '~/utils'
 
 const emit = defineEmits(['current-change'])
 const props = defineProps({
@@ -47,8 +47,10 @@ watch(() => props.currentId, newVal => {
                         </span>
                         <span v-else>
                             <b>
-                                {{ priceBlurFormatter((row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey])
-                                * (row[1].oneDis / 100)) }}
+                                {{
+                                    formatter.format((row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey])
+                                        * (row[1].oneDis / 100))
+                                }}
                             </b>
                             <br>
                             <s class="line">
@@ -58,11 +60,17 @@ watch(() => props.currentId, newVal => {
                         <span>{{ row[1].num }}</span>
                         <span>
                             <el-tooltip
-                                :disabled="`${(row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey]) * row[1].num}`.length <= 9"
+                                :disabled="formatter.format(formatter.format((row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey]) * (row[1].oneDis / 100)) * row[1].num).length <= 9"
                                 effect="dark"
-                                :content="`${(row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey]) * row[1].num}`"
+                                :content="formatter.format(formatter.format((row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey]) * (row[1].oneDis / 100)) * row[1].num)"
                                 placement="top">
-                                {{ (row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey]) * row[1].num }}
+                                {{
+                                    formatter.format(
+                                        +formatter.format((row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey])
+                                            * (row[1].oneDis / 100))
+                                        * row[1].num
+                                    )
+                                }}
                             </el-tooltip>
                         </span>
                     </div>

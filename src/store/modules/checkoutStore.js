@@ -18,11 +18,14 @@ export const useCheckoutStore = defineStore('checkout', {
         },
         pushIntoOrder(goods) {
             if (null == goods || !goods?.goods_id) return
-            if (this.order.has(goods.goods_id)) goods.num = this.order.get(goods.goods_id).num += 1
-            this.order.set(goods.goods_id, { ...goods })
+            if (this.order.has(goods.goods_id)) this.order.get(goods.goods_id).num += 1
+            else this.order.set(goods.goods_id, { ...goods })
         },
         clearCurrentGoods() {
             this.currentGoods = []
+        },
+        deleteCurrentFormOrder(goods_id) {
+            this.order.delete(goods_id)
         }
     }
 })
