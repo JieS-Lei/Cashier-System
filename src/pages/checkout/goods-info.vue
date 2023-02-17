@@ -9,6 +9,8 @@ import { watch } from 'vue';
 const checkoutStore = useCheckoutStore()
 const { currentGoods, vipCheck } = storeToRefs(checkoutStore)
 
+const emits = defineEmits(['currentDelete'])
+
 const goods = computed(() => currentGoods.value[1])
 const goodsPrice = computed(() => goods.value.diyPrice ?? goods.value.goods_sku[vipCheck.value ? 'goods_vip_price' : 'goods_price'])
 
@@ -91,7 +93,8 @@ const keyClick = val => {
 }
 
 // 监听选中变化
-watch(goods, () => {
+watch(goods, newVal => {
+    if (null == newVal) return
     // 数据初始化
     showInput.value = 0
     ipuVal.val1 = goodsPrice.value
@@ -101,8 +104,9 @@ watch(goods, () => {
 
 // 删除选中
 const deleteClick = () => {
-    console.log(currentGoods.value[0]);
     checkoutStore.deleteCurrentFormOrder(currentGoods.value[0])
+    emits('currentDelete', 1)
+    checkoutStore.clearCurrentGoods()
 }
 </script>
 <template>
@@ -153,8 +157,8 @@ const deleteClick = () => {
                     <div>
                         <span class="tit">数量：</span>
                         <span class="cont">
-                            <el-input-number v-model="ipuVal.sumCopy" :min="1" :max="99" :precision="0"
-                                value-on-clear="min" step-strictly @change="val => goods.num = val" />
+                            <el-input-number v-model="ipuVal.sumCopy" :min="1" :max="99" :precision="0" value-on-clear="min"
+                                step-strictly @change="val => goods.num = val" />
                         </span>
                     </div>
                 </div>
@@ -164,11 +168,11 @@ const deleteClick = () => {
             <keyboardVue @keyClick="keyClick" />
         </div>
         <div class="delete" @click="deleteClick">
-            <el-icon class="icon" size="20">
+            <el-icon class="icon" size="25">
                 <epDelete />
             </el-icon>
         </div>
-    </div>
+</div>
 </template>
 <style scoped>
 .wrap {
@@ -187,15 +191,22 @@ const deleteClick = () => {
     width: var(--deleteSize);
     height: var(--deleteSize);
     transform: translate(-50%, -50%);
-    background-color: aqua;
+    color: #fff;
+    background-color: var(--el-color-danger);
     border-radius: 50%;
+    transition: background-color .2s;
+}
+
+.delete:hover {
+    background-color: var(--el-color-danger-light-3);
+    cursor: pointer;
 }
 
 .delete .icon {
     position: absolute;
     right: 0;
     bottom: 0;
-    transform: translate(calc(var(--deleteSize) / -5), calc(var(--deleteSize) / -5));
+    transform: translate(calc(var(--deleteSize) / -6), calc(var(--deleteSize) / -6));
 }
 
 .top {

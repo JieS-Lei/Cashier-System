@@ -101,8 +101,7 @@ const keyClick = val => {
 <template>
     <div class="selectGoods">
         <div class="search">
-            <el-input class="search-input" v-model="searchVal" size="large" placeholder="商品名称/首字母/条码/扫码"
-                @change="initData">
+            <el-input class="search-input" v-model="searchVal" size="large" placeholder="商品名称/首字母/条码/扫码" @change="initData">
                 <template #prefix>
                     <el-icon>
                         <epSearch />
@@ -159,8 +158,8 @@ const keyClick = val => {
                             :class="{ 'nochildren': !typeItem.children?.length, 'active': (index + 1) === parseInt(checkedType) }"
                             :name="index + 1" v-for="(typeItem, index) in typeList" :key="typeItem.id">
                             <template #title>
-                                <el-tooltip :disabled="typeItem.label.length <= 4" effect="dark"
-                                    :content="typeItem.label" placement="left">
+                                <el-tooltip :disabled="typeItem.label.length <= 4" effect="dark" :content="typeItem.label"
+                                    placement="left">
                                     <span class="overflow">{{ typeItem.label }}</span>
                                 </el-tooltip>
                             </template>
@@ -177,7 +176,7 @@ const keyClick = val => {
                 </span>
             </el-scrollbar>
         </div>
-    </div>
+</div>
 </template>
 <style scoped>
 @import url(~/assets/style/goodsTypes.css);
@@ -225,11 +224,12 @@ const keyClick = val => {
     position: relative;
     flex: 1;
     overflow: hidden;
-    padding: 10px 20px;
 }
 
 .infinite-list {
     height: 100%;
+    margin-top: 10px;
+    padding: 0 12px 10px 20px;
     display: flex;
     flex-wrap: wrap;
     overflow: scroll;

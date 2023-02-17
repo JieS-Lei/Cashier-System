@@ -40,10 +40,6 @@ const handleTabClick = tabName => {
     activeIndex.value = tabName
     checkoutStore.clearCurrentGoods()
 }
-
-const fn = row => {
-    activeIndex.value = 3
-}
 </script>
 <template>
     <el-scrollbar>
@@ -69,13 +65,15 @@ const fn = row => {
             <el-container class="shell pageBgColor">
                 <el-aside class="aside" width="450px">
                     <KeepAlive>
-                        <component :is="headerTabVal ? cashierVue : refundVue" @current-change="fn"></component>
+                        <component :is="headerTabVal ? cashierVue : refundVue" @current-change="activeIndex = 3">
+                        </component>
                     </KeepAlive>
                 </el-aside>
                 <el-container style="overflow: hidden;border: 1px solid var(--el-border-color);">
                     <el-main class="main" style="background-color: #fff;">
                         <KeepAlive exclude="goods-info">
-                            <component :is="tabs[activeIndex]?.component ?? goodsInfoVue"></component>
+                            <component :is="tabs[activeIndex]?.component ?? goodsInfoVue" @currentDelete="activeIndex = 1">
+                            </component>
                         </KeepAlive>
                     </el-main>
                     <el-footer class="footer">
@@ -87,7 +85,7 @@ const fn = row => {
                 </el-container>
             </el-container>
         </el-container>
-    </el-scrollbar>
+</el-scrollbar>
 </template>
 <style scoped>
 @import url(~/assets/style/common.css);
