@@ -46,9 +46,16 @@ onMounted(() => load())
 const handleGoodsClick = event => {
     let key = event.target.getAttribute('goodskey')
     if (!key) return
-    let goods = goodsList.value[key]
-    goods.num = 1 // 商品数量
-    goods.oneDis = 100 // 单个物品折扣（百分比）
+    let { goods_sku, goods_id, goods_name, goods_image, goods_no } = goodsList.value[key]
+    let goods = {
+        goods_sku,
+        goods_id,
+        goods_name,
+        goods_image,
+        goods_no,
+        num: 1, // 商品数量
+        oneDis: 100 // 单个物品折扣（百分比）
+    }
     checkoutStore.pushIntoOrder(goods)
 }
 const noMore = computed(() => (page.current - 1) * page.pageSize >= page.total)
@@ -176,7 +183,7 @@ const keyClick = val => {
                 </span>
             </el-scrollbar>
         </div>
-</div>
+    </div>
 </template>
 <style scoped>
 @import url(~/assets/style/goodsTypes.css);

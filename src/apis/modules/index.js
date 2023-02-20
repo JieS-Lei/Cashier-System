@@ -60,6 +60,9 @@ export const goodsApi = {
     getCheckoutDiscount: () => Post('cashier/getDiscountParam'),
     // 修改收银固定优惠参数
     setCheckoutDiscount: data => Post('cashier/updateDiscountParam', data),
+    // 创建订单
+    createOrder: data => Post('cashier/createCashierOrder', data),
+
 };
 
 // 文件上传

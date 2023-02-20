@@ -4,6 +4,7 @@ import { useCheckoutStore } from '~/store/modules/checkoutStore'
 import { formatter } from '~/utils'
 import settementListVue from '~/components/settlementList.vue'
 import { ref } from 'vue';
+import { apis } from '~/apis'
 
 const checkoutStore = useCheckoutStore()
 
@@ -61,12 +62,36 @@ const currentChange = row => {
     emits('current-change', row)
 }
 
-// 打开备注快捷键
+// 快捷键
 const shortcutKeys = event => {
-    if (event.ctrlKey && event.key === 'b') remarkOpen()
+    if (event.ctrlKey && event.key === 'b') remarkOpen() // 打开备注
 }
 document.addEventListener('keyup', shortcutKeys)
 onUnmounted(() => document.removeEventListener('keyup', shortcutKeys))
+
+// 清除订单列表
+const clearAll = () => ElMessageBox({
+    title: '提示',
+    message: h('p', null, [
+        '确定',
+        h('span', { style: 'margin: 0 5px;color: red' }, '清空'),
+        '商品列表？'
+    ]),
+    cancelButtonText: '取消',
+    center: true,
+    showCancelButton: true,
+    showClose: false,
+    draggable: true,
+    customStyle: {
+        display: 'block',
+        margin: '18vh auto 0'
+    },
+    async beforeClose(action, instance, done) {
+        if (action === 'confirm') order.value.clear()
+        done()
+    },
+    callback() { }
+})
 
 // 备注内容
 const remarksDialogVisible = ref(false) // 对话框显隐
@@ -74,8 +99,17 @@ const remarks = reactive({
     content: '',
     copy: ''
 })
+
 // 备注对话框打开
-const remarkOpen = () => remarksDialogVisible.value = (remarks.copy = remarks.content, true)
+const oneInputRef = ref() // input实例
+const remarkOpen = () => {
+    remarks.copy = remarks.content
+    remarksDialogVisible.value = true
+    // 获取焦点
+    setTimeout(() => nextTick(() => {
+        oneInputRef.value.focus()
+    }), 0)
+}
 // 备注对话框提交
 const remarksSubmit = () => remarksDialogVisible.value = (remarks.content = remarks.copy, false)
 const handelRemarksKeyboard = event => {
@@ -96,12 +130,41 @@ const elTagOption = {
     }
 }
 
+// 创建订单
+const loadingOurderBtn = ref(false)
+const submitOurder = async isPending => {
+    if (!order.value.size) return
+    loadingOurderBtn.value = true
+    let discount_type = '', discount = ''
+    if (checkedDiscount.value.has('discount')) {
+        discount_type = 'ratio'
+        discount = checkedDiscount.value.get('discount')
+    }
+    else if (checkedDiscount.value.has('reduce')) {
+        discount_type = 'price'
+        discount = checkedDiscount.value.get('reduce')
+    }
+    let options = {
+        type: 0,
+        pending: +isPending,
+        goods_param: JSON.stringify(Array.from(order.value)),
+        discount_type,
+        discount,
+        discount_delzero_val: notSmaCha.value,
+        remark: remarks.content,
+    }
+    let [error, { code, data }] = await apis.createOrder(options)
+    loadingOurderBtn.value = false
+    if (error || 1 !== code) return ElMessage('订单创建失败')
+    console.log(data);
+}
+
 </script>
 <template>
     <div class="cas">
         <header class="cas-header">
-            <span class="tip">Ctrl+D</span>
-            <el-button text style="margin-left: 5px;">
+            <!-- <span class="tip">Ctrl+D</span> -->
+            <el-button text style="margin-left: 5px;" @click="clearAll">
                 <template #icon>
                     <el-icon>
                         <epDelete />
@@ -127,11 +190,11 @@ const elTagOption = {
                 </span>
                 <el-tag v-for="[key, val] in checkedDiscount" :type="elTagOption[key].type" class="mx-1" size="large"
                     closable @close="checkoutStore.delete_checkedDiscount(key)">
-                    {{ key=== 'reduce' ? '-' : ''}}{{ val+ elTagOption[key].unit }}
+                    {{ key === 'reduce' ? '-' : '' }}{{ val + elTagOption[key].unit }}
                 </el-tag>
             </span>
             <el-check-tag :checked="vipCheck" size="large" @change="vipCheck = !vipCheck">
-                {{ vipCheck?'会员': '顾客' }}
+                {{ vipCheck ? '会员' : '顾客' }}
             </el-check-tag>
         </div>
         <el-divider style="margin: 0 0 5px;" />
@@ -159,13 +222,14 @@ const elTagOption = {
                     <el-button type="info" plain size="large">取单 (F2)</el-button>
                 </el-badge>
                 <el-button type="warning" size="large">挂单 (F3)</el-button>
-                <el-button type="danger" size="large" style="margin-left: 0;">结算 (Space)</el-button>
+                <el-button type="danger" :loading="loadingOurderBtn" size="large" style="margin-left: 0;"
+                    @click="submitOurder">结算 (Space)</el-button>
             </div>
         </div>
         <el-dialog v-model="remarksDialogVisible" title="备注" width="40%" destroy-on-close center
             @keyup="handelRemarksKeyboard">
-            <el-input v-model="remarks.copy" type="textarea" :rows="3" maxlength="50" resize="none" placeholder="请输入备注"
-                show-word-limit autofocus />
+            <el-input ref="oneInputRef" v-model="remarks.copy" type="textarea" :rows="3" maxlength="50" resize="none"
+                placeholder="请输入备注" onfocus="this.select()" show-word-limit autofocus />
             <template #footer>
                 <el-button size="large" type="info" style="width: 125px;" @click="remarks.copy = ''">
                     清空 Delete

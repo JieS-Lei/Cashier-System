@@ -40,7 +40,7 @@ watch(() => props.currentId, newVal => {
                 <div :class="['row', { 'current-row': currentRow === row[0], 'error-row': (row[1].goods_sku.stock_num < row[1].num) }, { 'warning-row': +row[1].goods_sku[goodsPriceKey] < +row[1].goods_sku.goods_cost_price }]"
                     v-for="(row, index) of list" @click="rowClick(row)">
                     <div class="content">
-                        <span>{{ index+ 1 }}</span>
+                        <span>{{ index + 1 }}</span>
                         <span>{{ row[1].goods_name }}</span>
                         <span v-if="row[1].oneDis >= 100">
                             {{ row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey] }}
