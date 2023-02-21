@@ -16,6 +16,7 @@
     "nprogress": "^0.2.0",
     "pinia": "^2.0.28",
     "pinia-plugin-persistedstate": "^3.0.1",
+    "qrcode": "^1.5.1",
     "vue": "^3.2.41",
     "vue-router": "4",
     "vuedraggable": "^4.1.0"

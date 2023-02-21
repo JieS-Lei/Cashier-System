@@ -40,6 +40,10 @@ const handleTabClick = tabName => {
     activeIndex.value = tabName
     checkoutStore.clearCurrentGoods()
 }
+const headleClearOrder = () => {
+    if (activeIndex.value === 3) activeIndex.value = 1
+    checkoutStore.clearCurrentGoods()
+}
 </script>
 <template>
     <el-scrollbar>
@@ -65,8 +69,8 @@ const handleTabClick = tabName => {
             <el-container class="shell pageBgColor">
                 <el-aside class="aside" width="450px">
                     <KeepAlive>
-                        <component :is="headerTabVal ? cashierVue : refundVue" @current-change="activeIndex = 3">
-                        </component>
+                        <component :is="headerTabVal ? cashierVue : refundVue" @current-change="activeIndex = 3"
+                            @clear-order="headleClearOrder" />
                     </KeepAlive>
                 </el-aside>
                 <el-container style="overflow: hidden;border: 1px solid var(--el-border-color);">
@@ -85,7 +89,7 @@ const handleTabClick = tabName => {
                 </el-container>
             </el-container>
         </el-container>
-</el-scrollbar>
+    </el-scrollbar>
 </template>
 <style scoped>
 @import url(~/assets/style/common.css);

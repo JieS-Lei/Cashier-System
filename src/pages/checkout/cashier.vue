@@ -6,11 +6,13 @@ import settementListVue from '~/components/settlementList.vue'
 import { ref } from 'vue';
 import { apis } from '~/apis'
 
+import QRcodeVue from '~/components/QRcode.vue'
+
 const checkoutStore = useCheckoutStore()
 
 const { order, checkedDiscount, notSmaCha, currentGoods, vipCheck } = storeToRefs(checkoutStore)
 
-const emits = defineEmits(['current-change'])
+const emits = defineEmits(['current-change', 'clear-order'])
 
 // 金额抹零
 const handleNotSmaCha = num => {
@@ -87,7 +89,10 @@ const clearAll = () => ElMessageBox({
         margin: '18vh auto 0'
     },
     async beforeClose(action, instance, done) {
-        if (action === 'confirm') order.value.clear()
+        if (action === 'confirm') {
+            order.value.clear()
+            emits('clear-order')
+        }
         done()
     },
     callback() { }
@@ -134,29 +139,54 @@ const elTagOption = {
 const loadingOurderBtn = ref(false)
 const submitOurder = async isPending => {
     if (!order.value.size) return
-    loadingOurderBtn.value = true
-    let discount_type = '', discount = ''
-    if (checkedDiscount.value.has('discount')) {
-        discount_type = 'ratio'
-        discount = checkedDiscount.value.get('discount')
-    }
-    else if (checkedDiscount.value.has('reduce')) {
-        discount_type = 'price'
-        discount = checkedDiscount.value.get('reduce')
-    }
-    let options = {
-        type: 0,
-        pending: +isPending,
-        goods_param: JSON.stringify(Array.from(order.value)),
-        discount_type,
-        discount,
-        discount_delzero_val: notSmaCha.value,
-        remark: remarks.content,
-    }
-    let [error, { code, data }] = await apis.createOrder(options)
-    loadingOurderBtn.value = false
-    if (error || 1 !== code) return ElMessage('订单创建失败')
-    console.log(data);
+    ElMessageBox.confirm(`是否确认 ${isPending ? '挂起' : '结算'} 订单？`, '提示', {
+        showClose: false,
+        draggable: true,
+        async beforeClose(action, instance, done) {
+            if (action !== 'confirm') return done()
+            instance.confirmButtonLoading = loadingOurderBtn.value = true
+            let discount_type = '', discount = ''
+            if (checkedDiscount.value.has('discount')) {
+                discount_type = 'ratio'
+                discount = checkedDiscount.value.get('discount')
+            }
+            else if (checkedDiscount.value.has('reduce')) {
+                discount_type = 'price'
+                discount = checkedDiscount.value.get('reduce')
+            }
+            let options = {
+                type: 0,
+                pending: +isPending,
+                goods_param: JSON.stringify(Array.from(order.value)),
+                discount_type,
+                discount,
+                discount_delzero_val: notSmaCha.value,
+                remark: remarks.content,
+            }
+            let [error, { code, data }] = await apis.createOrder(options)
+            instance.confirmButtonLoading = loadingOurderBtn.value = false
+            done()
+            if (error || 1 !== code) return ElMessage('订单创建失败')
+            if (isPending) {
+                // 挂单
+                order.value.clear()
+                return emits('clear-order')
+            }
+            // 订单结算
+            payOptions.url = data.pay_url
+            payOptions.sn = data.order_sn
+            payOptions.money = data.pay_amount
+            payDialogVisible.value = true
+        },
+        callback() { }
+    })
+}
+
+const payDialogVisible = ref(false)
+const payOptions = {
+    url: '',
+    sn: '',
+    money: '0.00'
 }
 
 </script>
@@ -221,9 +251,9 @@ const submitOurder = async isPending => {
                 <el-badge :hidden="false" :value="1" type="info">
                     <el-button type="info" plain size="large">取单 (F2)</el-button>
                 </el-badge>
-                <el-button type="warning" size="large">挂单 (F3)</el-button>
+                <el-button type="warning" size="large" @click="submitOurder(1)">挂单 (F3)</el-button>
                 <el-button type="danger" :loading="loadingOurderBtn" size="large" style="margin-left: 0;"
-                    @click="submitOurder">结算 (Space)</el-button>
+                    @click="submitOurder(0)">结算 (Space)</el-button>
             </div>
         </div>
         <el-dialog v-model="remarksDialogVisible" title="备注" width="40%" destroy-on-close center
@@ -237,6 +267,16 @@ const submitOurder = async isPending => {
                 <el-button type="primary" size="large" @click="remarksSubmit" style="width: 125px; margin-left: 50px;">
                     添加 Ctrl+Enter
                 </el-button>
+            </template>
+        </el-dialog>
+        <el-dialog class="payDialog" v-model="payDialogVisible" title="支付" width="450" :close-on-click-modal="false"
+            :show-close="false" center>
+            <p class="max money">金额：{{ payOptions.money || '0.00' }}元</p>
+            <p class="max sn">订单号：{{ payOptions.sn }}</p>
+            <QRcodeVue :qrUrl="payOptions.url" />
+            <p class="ps">请使用 <b>微信</b> 扫码支付</p>
+            <template #footer>
+                <el-button type="primary" size="large" @click="remarksSubmit">现金支付</el-button>
             </template>
         </el-dialog>
     </div>
@@ -346,5 +386,15 @@ const submitOurder = async isPending => {
     font-size: 12px;
     font-weight: bold;
     color: var(--el-text-color-placeholder);
+}
+
+.payDialog .max {
+    text-align: center;
+    font-weight: bolder;
+}
+
+.payDialog .ps {
+    text-align: center;
+    color: var(--el-color-danger);
 }
 </style>
