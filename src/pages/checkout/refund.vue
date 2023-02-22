@@ -197,7 +197,7 @@ const submitOurder = async isPending => {
                 {{ vipCheck ? '会员' : '顾客' }}
             </el-check-tag>
         </div>
-        <el-divider style="margin: 0 0 5px;" />
+        <el-divider style="margin: 0" />
         <div class="billSummary">
             <ul class="amountView">
                 <li class="cell">
@@ -218,8 +218,8 @@ const submitOurder = async isPending => {
                 </li>
             </ul>
             <div class="btns">
-                <el-button type="danger" :loading="loadingOurderBtn" size="large" style="margin-left: 0;"
-                    @click="submitOurder">结算 (Space)</el-button>
+                <el-button type="success" :loading="loadingOurderBtn" size="large" style="width: 180px;"
+                    @click="submitOurder">退款 (Space)</el-button>
             </div>
         </div>
         <el-dialog v-model="remarksDialogVisible" title="备注" width="40%" destroy-on-close center
@@ -277,7 +277,8 @@ const submitOurder = async isPending => {
 }
 
 .billSummary {
-    padding: 10px 14px;
+    padding: 15px 14px 10px;
+    background-color: rgba(var(--el-color-success-rgb), .1);
 }
 
 .billSummary .amountView {
@@ -320,8 +321,8 @@ const submitOurder = async isPending => {
 
 .btns {
     display: flex;
-    justify-content: space-between;
-    padding-top: 5px;
+    justify-content: flex-end;
+    padding: 5px 10px 0;
 }
 
 .btns:deep(.el-button span) {
