@@ -26,6 +26,9 @@ export const useCheckoutStore = defineStore('checkout', {
         },
         deleteCurrentFormOrder(goods_id) {
             this.order.delete(goods_id)
+        },
+        clearOrder() {
+            this.order.clear()
         }
     }
 })

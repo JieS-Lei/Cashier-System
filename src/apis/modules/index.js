@@ -62,6 +62,10 @@ export const goodsApi = {
     setCheckoutDiscount: data => Post('cashier/updateDiscountParam', data),
     // 创建订单 | 挂单
     createOrder: data => Post('cashier/createCashierOrder', data),
+    // 获取挂单列表
+    getPendingOrder: data => Post('cashier/pendingOrderList', data),
+    // 删除订单
+    deleteOrder: data => Post('cashier/delOrder', data),
 
 };
 

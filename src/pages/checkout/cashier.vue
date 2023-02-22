@@ -1,12 +1,13 @@
 <script setup>
 import { storeToRefs } from 'pinia'
 import { useCheckoutStore } from '~/store/modules/checkoutStore'
-import { formatter } from '~/utils'
+import { formatter, formatDate } from '~/utils'
 import settementListVue from '~/components/settlementList.vue'
 import { ref } from 'vue';
 import { apis } from '~/apis'
 
 import QRcodeVue from '~/components/QRcode.vue'
+import { ElMessage } from 'element-plus';
 
 const checkoutStore = useCheckoutStore()
 
@@ -136,9 +137,10 @@ const elTagOption = {
 }
 
 // 创建订单
+let orderSN = '' // 订单id
 const loadingOurderBtn = ref(false)
 const submitOurder = async isPending => {
-    if (!order.value.size) return
+    if (!order.value.size) return ElMessage.warning({ message: '请选择商品', grouping: true })
     ElMessageBox.confirm(`是否确认 ${isPending ? '挂起' : '结算'} 订单？`, '提示', {
         showClose: false,
         draggable: true,
@@ -161,22 +163,27 @@ const submitOurder = async isPending => {
                 discount_type,
                 discount,
                 discount_delzero_val: notSmaCha.value,
-                remark: remarks.content,
+                remark: remarks.content
             }
+            if (orderSN) options['order_sn'] = orderSN
             let [error, { code, data }] = await apis.createOrder(options)
             instance.confirmButtonLoading = loadingOurderBtn.value = false
             done()
             if (error || 1 !== code) return ElMessage('订单创建失败')
+            remarks.content = ''
             if (isPending) {
                 // 挂单
                 order.value.clear()
-                return emits('clear-order')
+                emits('clear-order')
+                data.order.goods_param = JSON.parse(data.order.goods_param)
+                return pendingOrderList.value.push(data.order)
             }
             // 订单结算
             payOptions.url = data.pay_url
             payOptions.sn = data.order_sn
             payOptions.money = data.pay_amount
             payDialogVisible.value = true
+            // 轮询结算结果
         },
         callback() { }
     })
@@ -187,6 +194,69 @@ const payOptions = {
     url: '',
     sn: '',
     money: '0.00'
+}
+
+// 打开挂单列表
+const getOredrList = () => {
+    if (!pendingOrderList.value.length) return ElMessage.warning({ message: '暂无挂起订单', grouping: true })
+    pOrderVisible.value = true
+}
+
+// 挂单列表
+const pOrderVisible = ref(false)
+const pendingOrderList = ref([])
+const inpVla = ref('')
+const getPendingOrderList = async () => {
+    let [error, { code, data }] = await apis.getPendingOrder({
+        remark: inpVla.value
+    })
+    if (error || 1 !== code) return ElMessage('获取挂起订单列表失败')
+    pendingOrderList.value = data.map(item => {
+        item.goods_param = JSON.parse(item.goods_param)
+        return item
+    })
+}
+getPendingOrderList()
+
+const delOrder = async (sn, i) => {
+    ElMessageBox.confirm(`是否删除此挂单？`, '提示', {
+        showClose: false,
+        draggable: true,
+        async beforeClose(action, instance, done) {
+            if (action !== 'confirm') return done()
+            instance.confirmButtonLoading = true
+            let [error, { code }] = await apis.deleteOrder({ order_sn: sn })
+            done()
+            if (error || 1 !== code) return ElMessage('挂单删除失败')
+            let tempObj = pendingOrderList.value.splice(i, 1)
+            if (tempObj.order_sn === orderSN) orderSN = ''
+        },
+        callback() { }
+    })
+}
+const clearOrder = () => {
+    ElMessageBox.confirm(`是否清空全部挂单？`, '提示', {
+        showClose: false,
+        draggable: true,
+        async beforeClose(action, instance, done) {
+            if (action !== 'confirm') return done()
+            instance.confirmButtonLoading = true
+            let [error, { code }] = await apis.deleteOrder({ is_clear: 1 })
+            done()
+            if (error || 1 !== code) return ElMessage('清空挂单失败')
+            pendingOrderList.value = []
+            pOrderVisible.value = false
+            orderSN = ''
+        },
+        callback() { }
+    })
+}
+const getOrder = index => {
+    let orderObj = pendingOrderList.value[index]
+    orderSN = orderObj.order_sn
+    emits('clear-order')
+    order.value = new Map(orderObj.goods_param)
+    pOrderVisible.value = false
 }
 
 </script>
@@ -248,8 +318,8 @@ const payOptions = {
                 </li>
             </ul>
             <div class="btns">
-                <el-badge :hidden="false" :value="1" type="info">
-                    <el-button type="info" plain size="large">取单 (F2)</el-button>
+                <el-badge :hidden="!pendingOrderList.length" :value="pendingOrderList.length" type="info">
+                    <el-button type="info" plain size="large" @click="getOredrList">取单 (F2)</el-button>
                 </el-badge>
                 <el-button type="warning" size="large" @click="submitOurder(1)">挂单 (F3)</el-button>
                 <el-button type="danger" :loading="loadingOurderBtn" size="large" style="margin-left: 0;"
@@ -279,9 +349,187 @@ const payOptions = {
                 <el-button type="primary" size="large" @click="remarksSubmit">现金支付</el-button>
             </template>
         </el-dialog>
+        <Transition>
+            <div class="pendingOrder-overlay" v-show="pOrderVisible" @click.self="pOrderVisible = false">
+                <div class="pendingOrder">
+                    <div class="p-o-top">
+                        <el-input v-model="inpVla" class="w-50 m-2" size="large" placeholder="输入挂单备注搜索"
+                            @change="getPendingOrderList">
+                            <template #prefix>
+                                <el-icon>
+                                    <epSearch />
+                                </el-icon>
+                            </template>
+                        </el-input>
+                    </div>
+                    <el-scrollbar style="flex: 1">
+                        <ul class="p-o-list">
+                            <li class="p-o-item" v-for="(item, index) in pendingOrderList">
+                                <div class="p-o-item-tit">
+                                    <span>
+                                        <el-icon size="16" style="vertical-align: text-top;">
+                                            <epDocument />
+                                        </el-icon>
+                                        <b style="margin-left: 5px;">{{ item.order_sn }}</b>
+                                    </span>
+                                    <span>{{ formatDate(item.create_time * 1000, 'yyyy-MM-dd HH:mm:ss') }}</span>
+                                </div>
+                                <div class="goodsView">
+                                    <div class="box">
+                                        <span class="name textHiddle">{{ item.goods_param[0][1].goods_name }}</span>
+                                        <span class="price">￥{{ item.goods_param[0][1].goods_sku.goods_price }}</span>
+                                        <span class="num">x{{ item.goods_param[0][1].num }}</span>
+                                        <span class="dis">{{ item.goods_param[0][1].oneDis }}%</span>
+                                        <span class="count textHiddle">￥{{
+                                            formatter.format(
+                                                +formatter.format((item.goods_param[0][1].diyPrice ??
+                                                    item.goods_param[0][1].goods_sku.goods_price)
+                                                    * (item.goods_param[0][1].oneDis / 100))
+                                                * item.goods_param[0][1].num)
+                                        }}</span>
+                                    </div>
+                                    <div class="box" v-if="item.goods_param.length > 1">
+                                        <span class="name textHiddle">{{ item.goods_param[1][1].goods_name }}</span>
+                                        <span class="price">￥{{
+                                            item.goods_param[1][1].diyPrice ?? item.goods_param[1][1].goods_sku.goods_price
+                                        }}</span>
+                                        <span class="num">x{{ item.goods_param[1][1].num }}</span>
+                                        <span class="dis">{{ item.goods_param[0][1].oneDis }}%</span>
+                                        <span class="count textHiddle">￥{{
+                                            formatter.format(
+                                                +formatter.format((item.goods_param[1][1].diyPrice ??
+                                                    item.goods_param[1][1].goods_sku.goods_price)
+                                                    * (item.goods_param[1][1].oneDis / 100))
+                                                * item.goods_param[1][1].num)
+                                        }}</span>
+                                    </div>
+                                    <div class="box" v-if="item.goods_param.length > 2">......</div>
+                                </div>
+                                <div class="pic">
+                                    {{ item.count }}件商品，预计应付：￥{{ item.amount }}
+                                </div>
+                                <div class="btn">
+                                    <el-button @click="delOrder(item.order_sn, index)">删除挂单</el-button>
+                                    <el-button disabled>打印小票</el-button>
+                                    <el-button type="primary" style="width: 88px;" @click="getOrder(index)">取单</el-button>
+                                </div>
+                            </li>
+                        </ul>
+                    </el-scrollbar>
+                    <el-button size="large" style="height: 45px;" @click="clearOrder">
+                        <template #icon>
+                            <el-icon>
+                                <epDelete />
+                            </el-icon>
+                        </template>
+                        清空挂单
+                    </el-button>
+                </div>
+            </div>
+        </Transition>
     </div>
 </template>
 <style scoped>
+.v-enter-active,
+.v-leave-active {
+    transition: opacity .3s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+    opacity: 0;
+}
+
+.pendingOrder-overlay {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, .5);
+    z-index: 11;
+}
+
+.pendingOrder {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 55px;
+    bottom: 80px;
+    left: 10px;
+    width: 455px;
+    background-color: #fff;
+}
+
+.pendingOrder .p-o-top {
+    padding: 10px;
+}
+
+.p-o-item .p-o-item-tit {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--el-color-primary);
+    background-color: rgba(var(--el-color-primary-rgb), .1);
+}
+
+.goodsView .box {
+    padding: 5px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.goodsView .box>span {
+    padding: 0 5px;
+    box-sizing: border-box;
+}
+
+.goodsView .box .name {
+    flex: 1;
+}
+
+.goodsView .box .price {
+    width: 95px;
+}
+
+.goodsView .box .num {
+    width: 56px;
+    text-align: center;
+}
+
+.goodsView .box .dis {
+    width: 46px;
+}
+
+.goodsView .box .count {
+    width: 90px;
+    text-align: right;
+}
+
+.textHiddle {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.p-o-item .pic {
+    padding: 15px 10px 0;
+    text-align: right;
+    font-size: 15px;
+    font-weight: bolder;
+    color: var(--el-color-danger);
+}
+
+.p-o-item .btn {
+    padding: 5px 10px 10px;
+    text-align: right;
+}
+
 .cas {
     display: flex;
     flex-direction: column;

@@ -93,7 +93,7 @@ export const priceBlurFormatter = (value, len = 2) => {
 /**
  *  @description: 日期格式化函数
  *  @param date 日期类型
- *  @param format 日期格式  默认 yyyy-MM-dd HH:mm:ss格式
+ *  @param format 日期格式  默认 yyyy-MM-dd HH:mm:ss 星期w 格式
  */
 export const formatDate = (date, format = 'yyyy-MM-dd HH:mm:ss 星期w') => {
     if (!date || date.length < 4) return date

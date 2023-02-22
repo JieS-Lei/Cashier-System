@@ -40,7 +40,7 @@ const handleAddClick = money => {
             goods_price: money,
             goods_vip_price: money,
             line_price: '0.00',
-            stock_num: Infinity
+            stock_num: 999999
         },
         num: 1,
         oneDis: 100

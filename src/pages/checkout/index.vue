@@ -8,21 +8,36 @@ import discountTabVue from './discount-tab.vue'
 import selectGoodsTabVue from './selectGoods-tab.vue'
 import createOrderEntryTabVue from './createOrderEntry-tab.vue'
 import goodsInfoVue from './goods-info.vue'
+import { watch } from 'vue'
 
 const router = useRouter()
 const checkoutStore = useCheckoutStore()
 
+// 结算 | 退款
 const headerTabVal = ref(true)
 const headerTabFn = event => {
-    const target = event.target
-    if (target.className) return
+    if (event) {
+        const target = event.target
+        if (target.className) return
+    }
+    if (checkoutStore.order.size) return ElMessageBox.confirm(`离开将清空所有未结算商品，确认离开？`, '提示', {
+        showClose: false,
+        draggable: true,
+        callback(action) {
+            if (action === 'confirm') {
+                headleClearOrder()
+                checkoutStore.clearOrder()
+                headerTabVal.value = !headerTabVal.value
+            }
+        }
+    })
     headerTabVal.value = !headerTabVal.value
 }
 document.addEventListener('keydown', event => {
     if (event.altKey && event.key === 'q') event.preventDefault()
 })
 document.addEventListener('keyup', event => {
-    if (event.altKey && event.key === 'q') headerTabVal.value = !headerTabVal.value
+    if (event.altKey && event.key === 'q') headerTabFn()
 })
 
 const tabs = [{

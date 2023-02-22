@@ -79,7 +79,7 @@ watch(() => props.currentId, newVal => {
                             v-if="+(row[1].diyPrice ?? row[1].goods_sku[goodsPriceKey]) < +row[1].goods_sku.goods_cost_price"
                             style="color: var(--el-color-warning);">售价小于进价</span>
                         <span v-if="row[1].goods_sku.stock_num < row[1].num">库存不足，剩余{{
-                            row[1].goods_sku.stock_num
+                            +row[1].goods_sku.stock_num
                         }}件</span>
                     </div>
                 </div>
