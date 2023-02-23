@@ -8,7 +8,6 @@ import discountTabVue from './discount-tab.vue'
 import selectGoodsTabVue from './selectGoods-tab.vue'
 import createOrderEntryTabVue from './createOrderEntry-tab.vue'
 import goodsInfoVue from './goods-info.vue'
-import { watch } from 'vue'
 
 const router = useRouter()
 const checkoutStore = useCheckoutStore()
@@ -78,7 +77,7 @@ const headleClearOrder = () => {
                     <span :class="{ 'on': !headerTabVal }">退货 [Alt+Q]</span>
                 </span>
                 <div class="box herder-right">
-                    <el-button class="radius" plain size="large">设置</el-button>
+                    <!-- <el-button class="radius" plain size="large">设置</el-button> -->
                 </div>
             </el-header>
             <el-container class="shell pageBgColor">

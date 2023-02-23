@@ -66,6 +66,10 @@ export const goodsApi = {
     getPendingOrder: data => Post('cashier/pendingOrderList', data),
     // 删除订单
     deleteOrder: data => Post('cashier/delOrder', data),
+    // 订单现金支付
+    cashPay: order_sn => Post('cashier/cashPay', { order_sn }),
+    // 轮询订单结果
+    polling: data => Post('', data)
 
 };
 

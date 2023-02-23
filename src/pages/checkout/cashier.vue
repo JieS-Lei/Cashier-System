@@ -8,6 +8,7 @@ import { apis } from '~/apis'
 
 import QRcodeVue from '~/components/QRcode.vue'
 import { ElMessage } from 'element-plus';
+import { end } from '@popperjs/core';
 
 const checkoutStore = useCheckoutStore()
 
@@ -184,11 +185,53 @@ const submitOurder = async isPending => {
             payOptions.money = data.pay_amount
             payDialogVisible.value = true
             // 轮询结算结果
+            polling()
         },
         callback() { }
     })
 }
 
+// 轮询
+let countdown = 180
+let timer = null
+let isReq = false
+const endPolling = () => {
+    payDialogVisible = false
+    countdown = 180
+    clearInterval(timer)
+    payOptions = {
+        url: '',
+        sn: '',
+        money: '0.00'
+    }
+}
+const polling = () => {
+    timer = setInterval(() => {
+        countdown--
+        if (countdown <= 0) endPolling()
+        if (!isReq) {
+            isReq = true
+            apis.polling().then(([error, { code }]) => {
+                isReq = false
+                if (1 === code) endPolling()
+            })
+        }
+    }, 1000)
+}
+
+// 现金支付
+const cashPayLoading = ref(false)
+const handleCashPayClick = () => {
+    cashPayLoading = true
+    clearInterval(timer)
+    let [error, { code }] = apis.cashPay(payOptions.sn)
+    if (error || 1 !== code) {
+
+    }
+    cashPayLoading = false
+}
+
+// 支付对话框
 const payDialogVisible = ref(false)
 const payOptions = {
     url: '',
@@ -341,8 +384,13 @@ const getOrder = index => {
         </el-dialog>
         <el-dialog class="payDialog" v-model="payDialogVisible" title="支付" width="450" :close-on-click-modal="false"
             :show-close="false" center>
-            <p class="max money">金额：{{ payOptions.money || '0.00' }}元</p>
-            <p class="max sn">订单号：{{ payOptions.sn }}</p>
+            <div class="header">
+                <div class="left">
+                    <p class="money"><span>金额</span>：{{ payOptions.money || '0.00' }}元</p>
+                    <p class="sn"><span>订单号</span>：{{ payOptions.sn }}</p>
+                </div>
+                <div class="right">{{ countdown }}s</div>
+            </div>
             <QRcodeVue :qrUrl="payOptions.url" />
             <p class="ps">请使用 <b>微信</b> 扫码支付</p>
             <template #footer>
@@ -636,9 +684,27 @@ const getOrder = index => {
     color: var(--el-text-color-placeholder);
 }
 
-.payDialog .max {
-    text-align: center;
+.payDialog .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    margin: 0 auto;
+    width: 300px;
     font-weight: bolder;
+
+}
+
+.payDialog .header .left span {
+    display: inline-block;
+    width: 42px;
+    text-align: justify;
+    text-align-last: justify;
+}
+
+.payDialog .header .right {
+    font-size: 20px;
+    color: var(--el-color-danger);
 }
 
 .payDialog .ps {
