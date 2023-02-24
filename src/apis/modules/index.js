@@ -69,7 +69,11 @@ export const goodsApi = {
     // 订单现金支付
     cashPay: order_sn => Post('cashier/cashPay', { order_sn }),
     // 轮询订单结果
-    polling: data => Post('', data)
+    polling: data => Post('', data),
+    // 获取系统信息
+    getSetting: () => Post('system/getSetting'),
+    // 反馈
+    feedback: content => Post('cashier/feedback', { content }),
 
 };
 

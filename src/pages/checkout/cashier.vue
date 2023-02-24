@@ -8,7 +8,6 @@ import { apis } from '~/apis'
 
 import QRcodeVue from '~/components/QRcode.vue'
 import { ElMessage } from 'element-plus';
-import { end } from '@popperjs/core';
 
 const checkoutStore = useCheckoutStore()
 
@@ -192,12 +191,12 @@ const submitOurder = async isPending => {
 }
 
 // 轮询
-let countdown = 180
+let countdown = ref(180)
 let timer = null
 let isReq = false
 const endPolling = () => {
-    payDialogVisible = false
-    countdown = 180
+    payDialogVisible.value = false
+    countdown.value = 180
     clearInterval(timer)
     payOptions = {
         url: '',
@@ -207,13 +206,18 @@ const endPolling = () => {
 }
 const polling = () => {
     timer = setInterval(() => {
-        countdown--
+        countdown.value--
         if (countdown <= 0) endPolling()
         if (!isReq) {
             isReq = true
             apis.polling().then(([error, { code }]) => {
                 isReq = false
-                if (1 === code) endPolling()
+                if (1 === code) {
+                    endPolling()
+                    alert('支付成功')
+                    order.value.clear()
+                    emits('clear-order')
+                }
             })
         }
     }, 1000)
@@ -221,19 +225,20 @@ const polling = () => {
 
 // 现金支付
 const cashPayLoading = ref(false)
-const handleCashPayClick = () => {
-    cashPayLoading = true
-    clearInterval(timer)
-    let [error, { code }] = apis.cashPay(payOptions.sn)
-    if (error || 1 !== code) {
-
-    }
-    cashPayLoading = false
+const handleCashPayClick = async () => {
+    cashPayLoading.value = true
+    let [error, { code }] = await apis.cashPay(payOptions.sn)
+    cashPayLoading.value = false
+    if (error || 1 !== code) return ElMessage.warning('支付失败')
+    endPolling()
+    ElMessage.success('支付成功')
+    order.value.clear()
+    emits('clear-order')
 }
 
 // 支付对话框
 const payDialogVisible = ref(false)
-const payOptions = {
+let payOptions = {
     url: '',
     sn: '',
     money: '0.00'
@@ -394,7 +399,8 @@ const getOrder = index => {
             <QRcodeVue :qrUrl="payOptions.url" />
             <p class="ps">请使用 <b>微信</b> 扫码支付</p>
             <template #footer>
-                <el-button type="primary" size="large" @click="remarksSubmit">现金支付</el-button>
+                <el-button type="primary" size="large" :loading="cashPayLoading"
+                    @click="handleCashPayClick">现金支付</el-button>
             </template>
         </el-dialog>
         <Transition>

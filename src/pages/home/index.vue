@@ -1,10 +1,19 @@
 <script setup>
+import { apis } from '~/apis'
+import { storeToRefs } from 'pinia'
+import { useSystemStore } from '~/store/modules/systemStore'
+
 import iconImage from '~/components/iconImage.vue'
 import dataView from '~/components/dataView.vue'
+import { ElMessage } from 'element-plus'
+
+const systemStore = useSystemStore()
+const { information } = storeToRefs(systemStore)
 
 const buttons = [
-    { text: '商品', icon: '/ArrowLeft.png', link: '/goods' },
-    { text: '会员', icon: '/ArrowLeft.png', link: '/vip' },
+    { text: '商品', icon: '/icon/goods.png', link: '/goods' },
+    { text: '会员', icon: '/icon/vip.png', link: '/vip' },
+    { text: '销售', icon: '/icon/vip.png', link: '/vip' },
 ]
 const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
@@ -17,6 +26,30 @@ const command = function (command) {
 //     let target = event.target
 //     console.log(event);
 // }
+
+if (!information.value.sys_name) {
+    apis.getSetting().then(([error, { code, data }]) => {
+        if (error || 1 !== code) return ElMessage('系统参数获取失败')
+        data.forEach(item => {
+            information.value[item.key] = item.values
+        })
+    })
+}
+
+// 意见反馈
+const customerVisible = ref(false)
+const feedbackTextarea = ref('')
+const feedbackLoading = ref(false)
+const feedbackSubmit = async () => {
+    if (feedbackTextarea.value.length < 5) return ElMessage.warning({ message: '请输入内容或输入内容过于简单', grouping: true })
+    feedbackLoading.value = true
+    let [error, { code, data }] = await apis.feedback(feedbackTextarea.value)
+    feedbackLoading.value = true
+    if (error || 1 !== code) return ElMessage('抱歉！反馈内容发送失败。')
+    ElMessage.success(data)
+    feedbackTextarea.value = ''
+    customerVisible.value = false
+}
 
 
 </script>
@@ -31,7 +64,7 @@ const command = function (command) {
                 <el-button-group class="menu-btn-parent">
                     <router-link class="menu-btn" :to="button.link" v-for="button in buttons" :key="button.text">
                         <el-button :type="button.type" size="default" text bg style="width: 100%;height: 100%;">
-                            <icon-image class="menu-btn-icon" :src="button.icon" />
+                            <icon-image widHei="25" class="menu-btn-icon" :src="button.icon" />
                             {{ button.text }}
                         </el-button>
                     </router-link>
@@ -39,7 +72,7 @@ const command = function (command) {
                 <div class="cashier">
                     <router-link :to="{ name: 'checkout' }">
                         <el-button class="cashier-btn" color="#b4995a">
-                            <icon-image widHei="50" src="/logos.jpg" style="margin-bottom: 10px;" />
+                            <icon-image widHei="30" src="/icon/cashier1.png" style="margin-bottom: 10px;" />
                             收银台
                         </el-button>
                     </router-link>
@@ -49,7 +82,7 @@ const command = function (command) {
         <el-scrollbar style="flex: 1;">
             <el-container class="content">
                 <el-header class="header">
-                    <div class="setting">
+                    <div class="setting" @click="customerVisible = true">
                         <el-icon size="20">
                             <ep-service />
                         </el-icon>
@@ -89,9 +122,44 @@ const command = function (command) {
             </el-container>
         </el-scrollbar>
     </el-container>
+    <Transition>
+        <div class="overlay" v-show="customerVisible" @click.self="customerVisible = false">
+            <div class="customer-box">
+                <div class="customer">
+                    <p class="tit">联系客服</p>
+                    <div class="con">
+                        <el-image :src="information.sys_service_img" fit="cover" />
+                        <p class="i mSize">{{ information.sys_name }}</p>
+                        <p class="i">微信扫码，联系客服</p>
+                        <p class="i">客服电话：{{ information.sys_tel }}</p>
+                    </div>
+                </div>
+                <div class="feedback">
+                    <p class="tit">意见反馈</p>
+                    <div class="con">
+                        <el-input v-model="feedbackTextarea" resize="none" :input-style="{ height: '210px' }"
+                            type="textarea" maxlength="800" placeholder="对我们的系统、服务，您还有什么建议嘛？您还期待什么新功能？请告诉我们……（800字以内）"
+                            show-word-limit />
+                        <el-button type="primary" size="large" :loading="feedbackLoading"
+                            style="width: 100%;margin-top: 10px;" @click="feedbackSubmit">提交</el-button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Transition>
 </template>
 
 <style scoped>
+.v-enter-active,
+.v-leave-active {
+    transition: opacity .3s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+    opacity: 0;
+}
+
 .aside {
     /* logo高度 */
     --logo-height: 80px;
@@ -205,5 +273,64 @@ const command = function (command) {
 
 .main {
     padding: 30px 50px;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, .5);
+}
+
+.customer-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px;
+    background-color: #fff;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.customer-box>div {
+    padding: 10px;
+    flex: 1;
+    background-color: var(--el-bg-color-page);
+}
+
+.customer-box>div .tit {
+    margin-bottom: 10px;
+    font-size: 17px;
+    font-weight: bolder;
+    color: var(--el-text-color-primary);
+}
+
+.customer-box>div .con {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.customer-box>div .con .el-image {
+    width: 200px;
+    height: 200px;
+    margin-bottom: 10px;
+}
+
+.customer-box>div .con .i {
+    font-size: 12px;
+    color: var(--el-text-color-regular);
+}
+
+.customer-box>div .con .mSize {
+    font-size: 14px;
+}
+
+.customer-box .feedback {
+    margin-left: 20px;
 }
 </style>
