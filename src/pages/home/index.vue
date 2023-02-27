@@ -2,11 +2,12 @@
 import { apis } from '~/apis'
 import { storeToRefs } from 'pinia'
 import { useSystemStore } from '~/store/modules/systemStore'
+import { useRouter } from 'vue-router'
 
 import iconImage from '~/components/iconImage.vue'
 import dataView from '~/components/dataView.vue'
-import { ElMessage } from 'element-plus'
 
+const router = useRouter()
 const systemStore = useSystemStore()
 const { information } = storeToRefs(systemStore)
 
@@ -22,10 +23,6 @@ let dropdownShow = ref(false)
 const command = function (command) {
     ElMessage(`click on item ${command}`)
 }
-// const todo = function (event) {
-//     let target = event.target
-//     console.log(event);
-// }
 
 if (!information.value.sys_name) {
     apis.getSetting().then(([error, { code, data }]) => {
@@ -50,15 +47,13 @@ const feedbackSubmit = async () => {
     feedbackTextarea.value = ''
     customerVisible.value = false
 }
-
-
 </script>
 
 <template>
     <el-container direction="horizontal" style="font-family: var(--el-font-family);user-select: none;">
         <el-aside class="aside">
             <div class="logo">
-                <icon-image src="/logo.jpg" widHei="100%" bg />
+                <icon-image :src="information['sys_logo'] ?? ''" widHei="100%" bg />
             </div>
             <el-scrollbar class="menu">
                 <el-button-group class="menu-btn-parent">
@@ -88,7 +83,7 @@ const feedbackSubmit = async () => {
                         </el-icon>
                         <span>联系客服</span>
                     </div>
-                    <div class="setting">
+                    <div class="setting" @click="router.push({ name: 'setting' })">
                         <el-icon size="20">
                             <ep-setting />
                         </el-icon>

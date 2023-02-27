@@ -64,6 +64,16 @@ const defaultActive = ref(routerName.replace('vip', '').toLowerCase())
 <style scoped>
 @import url(~/assets/style/common.css);
 
+.fade-enter-active,
+.v-leave-active {
+    transition: opacity .3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
 .pageBgColor {
     padding: 10px;
 }

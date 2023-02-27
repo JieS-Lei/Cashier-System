@@ -74,6 +74,10 @@ export const goodsApi = {
     getSetting: () => Post('system/getSetting'),
     // 反馈
     feedback: content => Post('cashier/feedback', { content }),
+    // 获取店铺信息
+    getShopInfo: () => Post('cashier/getStoreInfo'),
+    // 获取省市县
+    getLocation: data => Post('system/getRegion', data)
 
 };
 

@@ -10,6 +10,21 @@ const routes = [
             admin: true
         }
     }, {
+        path: '/setting',
+        component: () => import('~/pages/home/setting/index.vue'),
+        meta: {
+            admin: true
+        },
+        children: [{
+            path: '',
+            name: 'setting',
+            component: () => import('~/pages/home/setting/shopInfo.vue')
+        }, {
+            path: 'auto',
+            name: 'auto',
+            component: () => import('~/pages/home/setting/auto.vue')
+        }]
+    }, {
         path: '/goods',
         name: 'goods',
         component: () => import('~/pages/goods/index.vue'),
