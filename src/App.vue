@@ -11,11 +11,12 @@ if (!userStore.token && tokenFromLoc) userStore.setToken(tokenFromLoc)
 /* End - 设置Token 到 pinia */
 
 /* Start 绑定Esc按键事件 */
-const backPages = ['goods', 'vip', 'checkout']
+const backPages = ['goods', 'vip', 'checkout', 'setting']
 const escDown = event => {
   if (event.key !== 'Escape') return false
-  let info = router.currentRoute.value
-  if (backPages.includes((info.name || '').split(/(?=[A-Z])/)[0])) router.back()
+  let info = router.currentRoute.value.matched[0]
+  let name = info.name ?? info.children[0].name
+  if (backPages.includes(name)) router.back()
 }
 document.documentElement.addEventListener('keyup', escDown, null)
 onBeforeUnmount(() => {
