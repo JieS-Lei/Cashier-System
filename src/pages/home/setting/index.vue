@@ -18,7 +18,7 @@ const defaultActive = ref(router.currentRoute.value.name)
                     返回 [ESC]
                 </el-button>
             </div>
-            <span class="title">基础设置</span>
+            <span class="title">设置</span>
             <div class="box"></div>
             <!-- </div> -->
         </el-header>
@@ -28,15 +28,15 @@ const defaultActive = ref(router.currentRoute.value.name)
                     <el-menu :default-active="defaultActive" class="el-menu-vertical-demo" @select="handleSelect">
                         <el-menu-item index="setting">
                             <el-icon>
-                                <epSetting />
+                                <epShop />
                             </el-icon>
                             <span>店铺设置</span>
                         </el-menu-item>
-                        <el-menu-item index="auto">
+                        <el-menu-item index="changePwd">
                             <el-icon>
-                                <epHouse />
+                                <epLock />
                             </el-icon>
-                            <span>抹零设置</span>
+                            <span>密码修改</span>
                         </el-menu-item>
                     </el-menu>
                 </el-scrollbar>

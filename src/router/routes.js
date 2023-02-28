@@ -20,9 +20,9 @@ const routes = [
             name: 'setting',
             component: () => import('~/pages/home/setting/shopInfo.vue')
         }, {
-            path: 'auto',
-            name: 'auto',
-            component: () => import('~/pages/home/setting/auto.vue')
+            path: 'changePassword',
+            name: 'changePwd',
+            component: () => import('~/pages/home/setting/changePwd.vue')
         }]
     }, {
         path: '/goods',
