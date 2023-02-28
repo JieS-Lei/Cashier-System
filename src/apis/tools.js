@@ -75,7 +75,6 @@ export const handleAuthError = errCode => {
         logout();
         return false
     }
-
     return true
 }
 

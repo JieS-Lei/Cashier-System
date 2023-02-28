@@ -76,9 +76,14 @@ export const goodsApi = {
     feedback: content => Post('cashier/feedback', { content }),
     // 获取店铺信息
     getShopInfo: () => Post('cashier/getStoreInfo'),
+    // 获取店铺业务分类
+    getShopBusinessScope: () => Post('cashier/getStoreCategory'),
     // 获取省市县
-    getLocation: data => Post('system/getRegion', data)
-
+    getLocation: data => Post('system/getRegion', data),
+    // 修改店铺信息
+    setShopInfo: data => Post('cashier/setStoreInfo', data),
+    // 修改密码
+    changePwd: data => Post('cashier/updatePwd', data),
 };
 
 // 文件上传
