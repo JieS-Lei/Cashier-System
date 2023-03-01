@@ -416,7 +416,7 @@ const balRecSubmit = async () => {
                             <el-table-column prop="birthday" label="生日" width="120" align="center">
                                 <template #default="scope">
                                     {{ formatDate(replace(scope.row, scope.column, scope.row.birthday, scope.$index),
-                                    'yyyy-MM-dd') }}
+                                        'yyyy-MM-dd') }}
                                 </template>
                             </el-table-column>>
                             <el-table-column label="折扣" align="center">

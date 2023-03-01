@@ -7,53 +7,55 @@ const handleSelect = name => router.replace({ name: name })
 const defaultActive = ref(router.currentRoute.value.name)
 </script>
 <template>
-    <el-container class="container">
-        <el-header class="header">
-            <!-- <div class="shell"> -->
-            <div class="box">
-                <el-button size="large" text @click="router.back()">
-                    <el-icon>
-                        <epArrowLeftBold />
-                    </el-icon>
-                    返回 [ESC]
-                </el-button>
-            </div>
-            <span class="title">设置</span>
-            <div class="box"></div>
-            <!-- </div> -->
-        </el-header>
-        <el-container class="pageBgColor" style="overflow-y: auto;">
-            <el-aside class="aside" width="200px">
-                <el-scrollbar noresize>
-                    <el-menu :default-active="defaultActive" class="el-menu-vertical-demo" @select="handleSelect">
-                        <el-menu-item index="setting">
-                            <el-icon>
-                                <epShop />
-                            </el-icon>
-                            <span>店铺设置</span>
-                        </el-menu-item>
-                        <el-menu-item index="changePwd">
-                            <el-icon>
-                                <epLock />
-                            </el-icon>
-                            <span>密码修改</span>
-                        </el-menu-item>
-                    </el-menu>
-                </el-scrollbar>
-            </el-aside>
-            <el-main class="main">
-                <el-scrollbar>
-                    <router-view v-slot="{ Component }">
-                        <transition name="fade">
-                            <KeepAlive>
-                                <component class="roView" :is="Component" />
-                            </KeepAlive>
-                        </transition>
-                    </router-view>
-                </el-scrollbar>
-            </el-main>
+    <el-scrollbar>
+        <el-container class="container">
+            <el-header class="header">
+                <!-- <div class="shell"> -->
+                <div class="box">
+                    <el-button size="large" text @click="router.back()">
+                        <el-icon>
+                            <epArrowLeftBold />
+                        </el-icon>
+                        返回 [ESC]
+                    </el-button>
+                </div>
+                <span class="title">设置</span>
+                <div class="box"></div>
+                <!-- </div> -->
+            </el-header>
+            <el-container class="pageBgColor" style="overflow-y: auto;">
+                <el-aside class="aside" width="200px">
+                    <el-scrollbar noresize>
+                        <el-menu :default-active="defaultActive" class="el-menu-vertical-demo" @select="handleSelect">
+                            <el-menu-item index="setting">
+                                <el-icon>
+                                    <epShop />
+                                </el-icon>
+                                <span>店铺设置</span>
+                            </el-menu-item>
+                            <el-menu-item index="changePwd">
+                                <el-icon>
+                                    <epLock />
+                                </el-icon>
+                                <span>密码修改</span>
+                            </el-menu-item>
+                        </el-menu>
+                    </el-scrollbar>
+                </el-aside>
+                <el-main class="main">
+                    <el-scrollbar>
+                        <router-view v-slot="{ Component }">
+                            <transition name="fade">
+                                <KeepAlive>
+                                    <component class="roView" :is="Component" />
+                                </KeepAlive>
+                            </transition>
+                        </router-view>
+                    </el-scrollbar>
+                </el-main>
+            </el-container>
         </el-container>
-    </el-container>
+    </el-scrollbar>
 </template>
 <style scoped>
 @import url(~/assets/style/common.css);
