@@ -26,7 +26,7 @@ const defaultActive = ref(router.currentRoute.value.name)
             <el-container class="pageBgColor" style="overflow-y: auto;">
                 <el-aside class="aside" width="200px">
                     <el-scrollbar noresize>
-                        <el-menu :default-active="defaultActive" class="el-menu-vertical-demo" @select="handleSelect">
+                        <el-menu :default-active="defaultActive" @select="handleSelect">
                             <el-menu-item index="setting">
                                 <el-icon>
                                     <epShop />
