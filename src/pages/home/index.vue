@@ -14,7 +14,7 @@ const { information } = storeToRefs(systemStore)
 const buttons = [
     { text: '商品', icon: '/icon/goods.png', link: '/goods' },
     { text: '会员', icon: '/icon/vip.png', link: '/vip' },
-    { text: '销售', icon: '/icon/vip.png', link: '/vip' },
+    { text: '销售', icon: '/icon/vip.png', link: '/saleDetail' },
 ]
 const circleUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 

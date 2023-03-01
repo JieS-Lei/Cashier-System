@@ -32,6 +32,13 @@ const routes = [
             admin: true
         }
     }, {
+        path: '/saleDetail',
+        name: 'saleDetail',
+        component: () => import('~/pages/saleDetail/index.vue'),
+        meta: {
+            admin: true
+        }
+    }, {
         path: '/vip',
         meta: {
             admin: true
