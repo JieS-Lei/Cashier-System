@@ -30,7 +30,6 @@ const validatePass2 = (rule, value, callback) => {
 const rules = reactive({
     old_password: [
         { required: true, message: '请输入原密码', trigger: 'blur' },
-        { pattern: pwdReg, message: '密码是 同时包含 [数字]、[大写] 和 [小写字母] 且 不能以数字开头 的 8~32位 字符', trigger: 'blur' }
     ],
     new_password: [
         { validator: validatePass, trigger: 'blur' },
@@ -47,7 +46,7 @@ const submit = async formEl => {
             submitLoading.value = true
             let [error, { code }] = await apis.changePwd(pwdForm)
             submitLoading.value = false
-            if (error || 1 !== code) return ElMessage({ message: '密码修改失败', grouping: true })
+            if (error || 1 !== code) return
             ElMessage.success({ message: '密码修改成功' })
         } else {
             ElMessage.warning({ message: '表单存在错误项，请检查', grouping: true })

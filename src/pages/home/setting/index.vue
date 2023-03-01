@@ -45,7 +45,9 @@ const defaultActive = ref(router.currentRoute.value.name)
                 <el-scrollbar>
                     <router-view v-slot="{ Component }">
                         <transition name="fade">
-                            <component class="roView" :is="Component" />
+                            <KeepAlive>
+                                <component class="roView" :is="Component" />
+                            </KeepAlive>
                         </transition>
                     </router-view>
                 </el-scrollbar>
