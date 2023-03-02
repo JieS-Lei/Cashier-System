@@ -84,6 +84,10 @@ export const goodsApi = {
     setShopInfo: data => Post('cashier/setStoreInfo', data),
     // 修改密码
     changePwd: data => Post('cashier/updatePwd', data),
+    // 获取销售订单列表
+    getOrderList: data => Post('cashier/listSales', data),
+    // 获取订单详情
+    getOrderInfo: order_sn => Post('cashier/getCashierOrder', { order_sn }),
 };
 
 // 文件上传
