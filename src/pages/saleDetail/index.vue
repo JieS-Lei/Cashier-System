@@ -1,8 +1,9 @@
 <script setup>
 import { ElMessage } from 'element-plus';
+import { watch } from 'vue';
 import { useRouter } from 'vue-router'
 import { apis } from '~/apis'
-import { formatDate, priceBlurFormatter } from '~/utils'
+import { formatDate, priceBlurFormatter, formatter } from '~/utils'
 
 const router = useRouter()
 
@@ -71,14 +72,38 @@ const submit = async () => {
     if (mapList.value.has(element.day)) mapList.value.get(element.day).child.push(...element.child)
     else mapList.value.set(element.day, element)
   });
-  if (!defaultActive.value && list.length) defaultActive.value = list[0].child[0].order_sn
+  // if (!defaultActive.value && list.length) defaultActive.value = list[0].child[0].order_sn
+  defaultActive.value = list[0]?.child[0].order_sn ?? ''
   page.current++
 }
 submit()
+const handleFind = () => {
+  page.current = 1
+  mapList.value.clear()
+  submit()
+}
 
 // 默认选中
 const defaultActive = ref('')
 const handleSelect = id => defaultActive.value = id
+
+watch(defaultActive, newVal => {
+  if (!newVal) return false
+  getOrderInfo(newVal)
+})
+
+// 订单详情
+const orderInfoLoading = ref(false)
+const orderInfo = ref({})
+const getOrderInfo = async sn => {
+  orderInfoLoading.value = true
+  let [error, { code, data }] = await apis.getOrderInfo(sn)
+  orderInfoLoading.value = false
+  if (error || 1 !== code) return ElMessage('订单详情获取失败')
+  data.goods_param = JSON.parse(data.goods_param)
+  orderInfo.value = data
+  console.log(data);
+}
 
 </script>
 <template>
@@ -104,7 +129,7 @@ const handleSelect = id => defaultActive.value = id
             <el-input v-model="options.user_keywords" class="large radius" placeholder="请输入会员姓名/手机号" clearable
               style="width: 240px;" />
             <el-date-picker class="date radius" v-model="options.date" type="datetimerange" :default-time="defaultTime"
-              range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" />
+              range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 370px;" />
             <el-select v-model="options.pay_type" class="radius select" placeholder="支付方式" style="width: 140px;">
               <el-option v-for="(key, val) in PayMethodList" :key="key" :label="key" :value="val" />
             </el-select>
@@ -112,7 +137,8 @@ const handleSelect = id => defaultActive.value = id
               <el-option v-for="item in orderTypeList" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
             <div>
-              <el-button class="addBtn radius" type="primary" style="width: 100px;" @click="submit">查询</el-button>
+              <el-button class="addBtn radius" :loading="findLoading" type="primary" style="width: 100px;"
+                @click="handleFind">查询</el-button>
             </div>
           </div>
           <div class="right">
@@ -146,7 +172,7 @@ const handleSelect = id => defaultActive.value = id
               <span>合计：￥{{ priceBlurFormatter(page.total_money) }}</span>
             </div>
           </el-aside>
-          <el-main class="content-main">
+          <el-main class="content-main" v-loading="orderInfoLoading">
             <div class="content-main-top">
               <span>销售单详情</span>
               <span>
@@ -154,30 +180,45 @@ const handleSelect = id => defaultActive.value = id
                 <el-button>打印</el-button>
               </span>
             </div>
-            <p>单号：XSD23030200001.1</p>
-            <p>时间：2023-03-02 10:40:00</p>
-            <el-table :data="tableData" class="table">
+            <p>单号：{{ orderInfo.order_sn }}</p>
+            <p>时间：{{ formatDate(orderInfo.create_time * 1000, 'yyyy-MM-dd HH-mm-ss') }}</p>
+            <el-table :data="orderInfo.goods_param" class="table">
               <el-table-column type="index" width="20" />
-              <el-table-column prop="date" label="名称" width="180" />
-              <el-table-column prop="name" label="条码" />
-              <el-table-column prop="address" label="数量" />
-              <el-table-column prop="address" label="单价" />
-              <el-table-column prop="address" label="折扣" />
-              <el-table-column prop="address" label="小计" />
+              <el-table-column prop="[1].goods_name" label="名称" />
+              <el-table-column prop="[1].goods_no" label="条码" width="130" align="right" />
+              <el-table-column prop="[1].num" label="数量" width="75" align="center" />
+              <el-table-column label="单价" width="115" align="center">
+                <template #default="{ row }">
+                  ￥{{ row[1].goods_sku.goods_price }}
+                </template>
+              </el-table-column>
+              <el-table-column label="折扣" width="70" align="center">
+                <template #default="{ row }">
+                  {{ row[1].oneDis }}%
+                </template>
+              </el-table-column>
+              <el-table-column show-overflow-tooltip label="小计" width="125" align="center">
+                <template #default="{ row }">
+                  ￥{{ formatter.format((row[1].diyPrice ?? row[1].goods_sku['goods_price']) * (row[1].oneDis / 100) *
+                    row[1].num) }}
+                </template>
+              </el-table-column>
             </el-table>
             <div class="footer">
               <div>
-                <span>收银员：管理员</span>
-                <span>优惠：￥0.00</span>
-                <span>结算方式：现金</span>
-                <span>说明：无</span>
+                <span>收银员：{{ orderInfo.admin_user_name || '未知' }}</span>
               </div>
               <div>
-                <span>应收：￥10.00</span>
-                <span>实收：￥10.00</span>
+                <span>优惠：￥{{ orderInfo.discount_amount }}</span>
+                <span>应收：￥{{ orderInfo.amount }}</span>
               </div>
               <div>
-                <span>找零：￥0.00</span>
+                <span>结算方式：{{ PayMethodList[orderInfo.pay_type] ?? '未知' }}</span>
+                <span>实收：￥{{ orderInfo.pay_amount }}</span>
+                <span>找零：￥{{ }}</span>
+              </div>
+              <div>
+                <span>说明：{{ orderInfo.remark || '无' }}</span>
               </div>
             </div>
           </el-main>
@@ -279,14 +320,17 @@ const handleSelect = id => defaultActive.value = id
 .content-main .footer {
   padding: 0 20px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  font-size: 15px;
 }
 
 .content-main .footer>div {
-  flex: 1;
   display: flex;
-  flex-direction: column;
   line-height: 2;
+}
+
+.content-main .footer>div span {
+  width: 33.33%;
 }
 
 .top .left {
