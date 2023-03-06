@@ -68,6 +68,8 @@ const currentChange = row => {
 // 快捷键
 const shortcutKeys = event => {
     if (event.ctrlKey && event.key === 'b') remarkOpen() // 打开备注
+    if (event.altKey && event.key === '2') getOredrList()
+    if (event.code === 'Space') submitOurder(1)
 }
 document.addEventListener('keyup', shortcutKeys)
 onUnmounted(() => document.removeEventListener('keyup', shortcutKeys))
@@ -135,6 +137,10 @@ const elTagOption = {
         unit: '元'
     }
 }
+
+// 结算台
+const settleAccountsVisible = ref(true)
+const PrintTickets = ref(false) // 支付后打印小票与否
 
 // 创建订单
 let orderSN = '' // 订单id
@@ -367,9 +373,9 @@ const getOrder = index => {
             </ul>
             <div class="btns">
                 <el-badge :hidden="!pendingOrderList.length" :value="pendingOrderList.length" type="info">
-                    <el-button type="info" plain size="large" @click="getOredrList">取单 (F2)</el-button>
+                    <el-button type="info" plain size="large" @click="getOredrList">取单 (Alt+2)</el-button>
                 </el-badge>
-                <el-button type="warning" size="large" @click="submitOurder(1)">挂单 (F3)</el-button>
+                <el-button type="warning" size="large" @click="submitOurder(1)">挂单 (Alt+3)</el-button>
                 <el-button type="danger" :loading="loadingOurderBtn" size="large" style="margin-left: 0;"
                     @click="submitOurder(0)">结算 (Space)</el-button>
             </div>
@@ -403,6 +409,40 @@ const getOrder = index => {
                     @click="handleCashPayClick">现金支付</el-button>
             </template>
         </el-dialog>
+        <Transition>
+            <div class="sA-overlay">
+                <div class="sA-warp" v-show="settleAccountsVisible">
+                    <div class="sA-main">
+                        <div class="top">
+                            <div class="receivable">
+                                <span>应收</span>
+                                <span>￥0.00</span>
+                            </div>
+                            <el-divider direction="vertical" style="height: auto;" />
+                            <div class="PaidIn">
+                                <span>实收</span>
+                                <span style="color: var(--el-color-primary);">￥0.00</span>
+                            </div>
+                            <el-divider direction="vertical" style="height: auto;" />
+                            <div class="giveChange">
+                                <span>找零</span>
+                                <span style="color: var(--el-color-danger);">￥0.00</span>
+                            </div>
+                        </div>
+                        <div class="middle">
+                            <el-checkbox v-model="PrintTickets" label="支付完成打印小票" size="large" />
+                        </div>
+                        <div class="bottom"></div>
+                    </div>
+                    <div class="sA-tab">
+                        <div>取消[Esc]</div>
+                        <div>现金支付[Alt+2]</div>
+                        <div>扫码支付[Alt+3]</div>
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+        </Transition>
         <Transition>
             <div class="pendingOrder-overlay" v-show="pOrderVisible" @click.self="pOrderVisible = false">
                 <div class="pendingOrder">
@@ -716,5 +756,96 @@ const getOrder = index => {
 .payDialog .ps {
     text-align: center;
     color: var(--el-color-danger);
+}
+
+.sA-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, .5);
+    z-index: 9999;
+}
+
+.sA-warp {
+    --borderReadius: 5px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    padding: 20px;
+    border-radius: 5px;
+    width: 600px;
+    background-color: var(--el-bg-color-page);
+}
+
+.sA-main {
+    flex: 1;
+}
+
+.sA-tab {
+    width: 120px;
+    margin-left: 20px;
+}
+
+.sA-tab>div {
+    height: 60px;
+    border: var(--el-border-width) var(--el-border-style) var(--el-border-color);
+    border-radius: var(--borderReadius);
+    line-height: 60px;
+    text-align: center;
+    font-size: 14px;
+    background-color: #fff;
+    transition: all .2s;
+}
+
+.sA-tab>div:hover {
+    color: var(--el-color-primary);
+    border-color: var(--el-color-primary);
+    outline: none;
+    cursor: pointer;
+}
+
+.sA-tab>div:active {
+    background-color: var(--el-fill-color-light);
+}
+
+.sA-tab>div.active {
+    border-color: var(--el-color-primary);
+    color: var(--el-color-primary);
+    background-color: var(--el-color-primary-light-9);
+}
+
+.sA-tab>div+div {
+    margin-top: 10px;
+}
+
+.sA-main .top {
+    display: flex;
+    padding: 10px 0;
+    border-radius: var(--borderReadius);
+    background-color: #fff;
+}
+
+.sA-main .top>div:not(.el-divider) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    font-size: 12px;
+}
+
+.sA-main .top>div:not(.el-divider) span:last-child {
+    margin-top: 10px;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.sA-main .middle {
+    padding: 5px 0;
+    text-align: right;
 }
 </style>

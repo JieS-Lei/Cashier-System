@@ -32,21 +32,28 @@ const headerTabFn = event => {
     })
     headerTabVal.value = !headerTabVal.value
 }
-document.addEventListener('keydown', event => {
-    if (event.altKey && event.key === 'q') event.preventDefault()
-})
-document.addEventListener('keyup', event => {
+const shortcutKeys = event => {
     if (event.altKey && event.key === 'q') headerTabFn()
+    if (event.altKey && event.key === '4') activeIndex.value = 0
+    if (event.altKey && event.key === '5') activeIndex.value = 1
+    if (event.altKey && event.key === '6') activeIndex.value = 2
+}
+const preventDefault = event => event.altKey && event.preventDefault()
+document.addEventListener('keydown', preventDefault)
+document.addEventListener('keyup', shortcutKeys)
+onUnmounted(() => {
+    document.removeEventListener('keyup', shortcutKeys)
+    document.removeEventListener('keydown', preventDefault)
 })
 
 const tabs = [{
-    label: '优惠折扣 [F4]',
+    label: '优惠折扣 [Alt+4]',
     component: discountTabVue
 }, {
-    label: '手选商品 [F5]',
+    label: '手选商品 [Alt+5]',
     component: selectGoodsTabVue
 }, {
-    label: '直接收款 [F6]',
+    label: '直接收款 [Alt+6]',
     component: createOrderEntryTabVue
 }]
 const activeIndex = ref(1)
