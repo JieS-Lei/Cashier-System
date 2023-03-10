@@ -1,8 +1,8 @@
 <script setup>
 import { useCheckoutStore } from '~/store/modules/checkoutStore'
 import { priceBlurFormatter } from '~/utils'
+
 import keyboardVue from '~/components/keyboard.vue'
-import { ElMessage } from 'element-plus';
 
 const checkoutStore = useCheckoutStore()
 
