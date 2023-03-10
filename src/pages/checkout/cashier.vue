@@ -3,11 +3,10 @@ import { storeToRefs } from 'pinia'
 import { useCheckoutStore } from '~/store/modules/checkoutStore'
 import { formatter, formatDate } from '~/utils'
 import settementListVue from '~/components/settlementList.vue'
-import { ref } from 'vue';
 import { apis } from '~/apis'
 
 import QRcodeVue from '~/components/QRcode.vue'
-import { ElMessage } from 'element-plus';
+import settlementWholeVue from '~/components/settlement-whole.vue'
 
 const checkoutStore = useCheckoutStore()
 
@@ -140,7 +139,6 @@ const elTagOption = {
 
 // 结算台
 const settleAccountsVisible = ref(true)
-const PrintTickets = ref(false) // 支付后打印小票与否
 
 // 创建订单
 let orderSN = '' // 订单id
@@ -313,6 +311,16 @@ const getOrder = index => {
     pOrderVisible.value = false
 }
 
+// 整单支付 | 组合支付
+const headerTabVal = ref(true)
+const headerTabFn = event => {
+    if (event) {
+        const target = event.target
+        if (target.className) return
+    }
+    headerTabVal.value = !headerTabVal.value
+}
+
 </script>
 <template>
     <div class="cas">
@@ -410,36 +418,16 @@ const getOrder = index => {
             </template>
         </el-dialog>
         <Transition>
-            <div class="sA-overlay">
-                <div class="sA-warp" v-show="settleAccountsVisible">
-                    <div class="sA-main">
-                        <div class="top">
-                            <div class="receivable">
-                                <span>应收</span>
-                                <span>￥0.00</span>
-                            </div>
-                            <el-divider direction="vertical" style="height: auto;" />
-                            <div class="PaidIn">
-                                <span>实收</span>
-                                <span style="color: var(--el-color-primary);">￥0.00</span>
-                            </div>
-                            <el-divider direction="vertical" style="height: auto;" />
-                            <div class="giveChange">
-                                <span>找零</span>
-                                <span style="color: var(--el-color-danger);">￥0.00</span>
-                            </div>
-                        </div>
-                        <div class="middle">
-                            <el-checkbox v-model="PrintTickets" label="支付完成打印小票" size="large" />
-                        </div>
-                        <div class="bottom"></div>
+            <div class="sA-overlay" v-show="settleAccountsVisible">
+                <div class="sA-container">
+                    <div class="sA-header">
+                        <span class="title" @click="headerTabFn">
+                            <span :class="['mask', { 'on': !headerTabVal }]">蒙版</span>
+                            <span :class="{ 'on': headerTabVal }">整单支付 <b>Ctrl+Tab</b></span>
+                            <span :class="{ 'on': !headerTabVal }">组合支付 <b>Ctrl+Tab</b></span>
+                        </span>
                     </div>
-                    <div class="sA-tab">
-                        <div>取消[Esc]</div>
-                        <div>现金支付[Alt+2]</div>
-                        <div>扫码支付[Alt+3]</div>
-                        <div></div>
-                    </div>
+                    <settlementWholeVue />
                 </div>
             </div>
         </Transition>
@@ -768,84 +756,72 @@ const getOrder = index => {
     z-index: 9999;
 }
 
-.sA-warp {
-    --borderReadius: 5px;
+.sA-container {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    display: flex;
-    padding: 20px;
-    border-radius: 5px;
-    width: 600px;
     background-color: var(--el-bg-color-page);
 }
 
-.sA-main {
-    flex: 1;
-}
-
-.sA-tab {
-    width: 120px;
-    margin-left: 20px;
-}
-
-.sA-tab>div {
-    height: 60px;
-    border: var(--el-border-width) var(--el-border-style) var(--el-border-color);
-    border-radius: var(--borderReadius);
-    line-height: 60px;
-    text-align: center;
-    font-size: 14px;
-    background-color: #fff;
-    transition: all .2s;
-}
-
-.sA-tab>div:hover {
-    color: var(--el-color-primary);
-    border-color: var(--el-color-primary);
-    outline: none;
-    cursor: pointer;
-}
-
-.sA-tab>div:active {
-    background-color: var(--el-fill-color-light);
-}
-
-.sA-tab>div.active {
-    border-color: var(--el-color-primary);
-    color: var(--el-color-primary);
-    background-color: var(--el-color-primary-light-9);
-}
-
-.sA-tab>div+div {
-    margin-top: 10px;
-}
-
-.sA-main .top {
+.sA-header {
+    --tabHeight: 30px;
+    padding: 20px 0 0;
+    height: var(--tabHeight);
     display: flex;
-    padding: 10px 0;
-    border-radius: var(--borderReadius);
-    background-color: #fff;
-}
-
-.sA-main .top>div:not(.el-divider) {
-    display: flex;
-    flex-direction: column;
     justify-content: center;
-    align-items: center;
-    flex: 1;
+}
+
+.sA-header .title {
+    position: relative;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--el-text-color-primary);
+    background-color: #fff;
+}
+
+.sA-header .title span {
+    --oneTabWidth: 80px;
+    position: relative;
+    display: inline-block;
+    text-align: center;
+    height: var(--tabHeight);
+    line-height: var(--tabHeight);
+    transition: all .2s;
+    width: 135px;
+    overflow: hidden;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.sA-header .title span.on {
+    width: var(--oneTabWidth);
+    color: #fff;
+}
+
+.sA-header .title span.mask {
+    width: var(--oneTabWidth);
+    word-break: keep-all;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 20px;
+    color: transparent;
+    background-color: rgb(64, 158, 255);
+    z-index: 0;
+}
+
+.sA-header .title span.mask.on {
+    left: 100%;
+    transform: translateX(-100%);
+}
+
+.sA-header .title span b {
+    border-radius: 4px;
+    padding: 3px;
     font-size: 12px;
-}
-
-.sA-main .top>div:not(.el-divider) span:last-child {
-    margin-top: 10px;
-    font-size: 22px;
-    font-weight: bold;
-}
-
-.sA-main .middle {
-    padding: 5px 0;
-    text-align: right;
+    color: #b7c7d0;
+    background-color: var(--el-bg-color-page);
 }
 </style>
