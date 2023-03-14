@@ -427,7 +427,7 @@ const headerTabFn = event => {
                             <span :class="{ 'on': !headerTabVal }">组合支付 <b>Ctrl+Tab</b></span>
                         </span>
                     </div>
-                    <settlementWholeVue :receivable="orderSettlement.receivable" />
+                    <settlementWholeVue :receivable="orderSettlement.receivable" :scanCodePayOptions="{}" />
                 </div>
             </div>
         </Transition>

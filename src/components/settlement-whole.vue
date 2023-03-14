@@ -1,5 +1,7 @@
 <script setup>
 import { formatter } from '~/utils'
+
+import QRcodeVue from '~/components/QRcode.vue'
 import keyboardVue from '~/components/keyboard.vue'
 
 const props = defineProps({
@@ -9,13 +11,19 @@ const props = defineProps({
             // The value must match one of these strings
             return new RegExp('^\\d+\\.\\d{2}$').test(value)
         }
+    },
+    scanCodePayOptions: {
+        type: Object,
+        default: () => ({})
     }
 })
+
+const countdown = ref(360)
 
 const PrintTickets = ref(false) // 支付后打印小票与否
 const realMoney = ref('0.00') // 实付
 const giveChange = computed(() => formatter.format(realMoney.value - props.receivable))
-const selectModel = ref(1) // 切换支付方式
+const selectModel = ref(3) // 切换支付方式
 
 // 虚拟键盘点击
 const handelKeyClick = keyVal => {
@@ -89,7 +97,30 @@ const handelRemove = () => realMoney.value = '0.00'
                     </div>
                 </div>
                 <div v-if="selectModel === 3" class="ScanCode">
-
+                    <div class="left-qrcode">
+                        <QRcodeVue :qrUrl="props.scanCodePayOptions.url" :width="200" :height="200" :qrSize="200" />
+                        <div class="mark flex-column">
+                            <p>二维码已过期</p>
+                            <p style="margin-top: 8px;">请刷新</p>
+                        </div>
+                    </div>
+                    <div class="right-info">
+                        <div class="ord">
+                            <p class="sn">
+                                <span>订单号</span>
+                                <span>：{{ props.scanCodePayOptions.sn }}</span>
+                            </p>
+                            <p class="money">
+                                <span>金额</span>
+                                <span>：{{ props.scanCodePayOptions.money || props.receivable || '0.00' }}元</span>
+                            </p>
+                        </div>
+                        <div class="renovate">
+                            <span class="countBackwards">{{ countdown ? `${countdown}s 后失效` : '请刷新' }}</span>
+                            <el-button size="small" plain style="margin-left: 15px;">刷新</el-button>
+                        </div>
+                        <p class="ps">请使用 <b>微信</b> 扫码支付</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -102,6 +133,12 @@ const handelRemove = () => realMoney.value = '0.00'
     </div>
 </template>
 <style scoped>
+.flex-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
 .sA-warp {
     --borderReadius: 5px;
     display: flex;
@@ -210,12 +247,6 @@ const handelRemove = () => realMoney.value = '0.00'
     background-color: var(--btn-bg-color-hover);
 }
 
-.flex-column {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
 .sA-main .cash>div:not(.keyboar) {
     flex: 1;
     padding-left: 8px;
@@ -309,5 +340,78 @@ const handelRemove = () => realMoney.value = '0.00'
 .sA-main .offline>div .pay-name {
     margin-top: 2px;
     font-size: 15px;
+}
+
+.ScanCode {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    height: 224px;
+    border-radius: var(--borderReadius);
+    box-sizing: border-box;
+    background-color: #fff;
+}
+
+.ScanCode .left-qrcode {
+    position: relative;
+}
+
+.ScanCode .left-qrcode .mark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    background-color: hsla(0, 0%, 100%, .96);
+    backdrop-filter: blur(2px);
+}
+
+.ScanCode .right-info {
+    padding: 10px 15px;
+    box-sizing: border-box;
+    height: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.ScanCode .ord {
+    padding: 10px;
+    border-radius: var(--borderReadius);
+    background-color: #f2f3f5;
+    font-weight: bolder;
+    line-height: 22px;
+    color: #7990ad;
+}
+
+.ScanCode .ord p span:first-child {
+    display: inline-block;
+    width: 42px;
+    text-align: justify;
+    text-justify: inter-word;
+    text-align-last: justify;
+}
+
+.ScanCode .renovate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.ScanCode .renovate .countBackwards {
+    font-size: 20px;
+    min-width: 44px;
+    text-align: right;
+}
+
+.ScanCode .right-info .ps {
+    text-align: center;
+    color: var(--el-color-danger);
 }
 </style>
